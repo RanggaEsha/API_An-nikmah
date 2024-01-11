@@ -1,7 +1,6 @@
-from models import login
 from flask import request
 from flask_jwt_extended import create_access_token
-from models import validator_register,register_proccess
+from models import validator_register,register_proccess,login
 
 
 def login_controller():
