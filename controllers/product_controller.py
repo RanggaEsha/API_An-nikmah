@@ -3,7 +3,7 @@ from models import product
 import time, os
 
 
-def add_product():
+def add_product_controller():
     # Check if 'file' is in request.files
     if "file" not in request.files:
         return "no file part"
@@ -25,7 +25,6 @@ def add_product():
     # product_id = request.form.get('product_id')
     name = request.form.get("name")
     description = request.form.get("description")
-
     price = int(request.form.get("price"))
     quantity = int(request.form.get("quantity"))
     created_at = request.form.get("created_at")

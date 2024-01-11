@@ -3,7 +3,7 @@ sys.path.append('..')
 from db import conn
 from flask import request
 
-def register1(request):
+def register_proccess(request):
     first_name = request.form.get('first_name')
     last_name = request.form.get('last_name')
     email = request.form.get('email')
