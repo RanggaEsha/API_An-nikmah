@@ -1,19 +1,19 @@
 from db import conn
 
 
-def login(email: str,password: str):
-    
+def login_process(email: str, password: str):
+    cur = conn.cursor()
     try:
-        cur = conn.cursor()
-        cur.execute('SELECT email,password FROM users WHERE email = %s AND password = %s',(email,password))
-        row = cur.fetchone()
-        conn.commit()
-    except Exception as e:
-        conn.rollback()
-        raise e
+        cur.execute('SELECT * FROM users WHERE email = %s AND password = %s', (email, password))
+        user = cur.fetchone()
+        if user:
+            # Return user object, including first_name
+            return {"email": user[2], "first_name": user[1]}
     finally:
         cur.close()
-    return row
+
+    return None
+
 
 
 

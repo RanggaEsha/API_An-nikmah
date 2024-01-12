@@ -1,12 +1,11 @@
 from flask import Flask
-from controllers import login_controller,register_controller,add_product_controller
+from controllers import login_controller,register_controller,add_product_controller,protected_controller
 
 
 
 from flask_jwt_extended import (
     JWTManager,
     jwt_required,
-    get_jwt_identity,
 )
 from flask_cors import CORS 
 
@@ -16,12 +15,10 @@ CORS(app)
 app.config["JWT_SECRET_KEY"] = "bacotttttttt"
 jwt = JWTManager(app)
 
-@app.get('/products')
+@app.get('/protected')
 @jwt_required()
 def get_all_products():
-    current_user = get_jwt_identity()
-    return {'login as':current_user},200
-   
+    return protected_controller()
 
 @app.post('/login')
 def login_process():
