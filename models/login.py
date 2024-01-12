@@ -7,7 +7,6 @@ def login_process(email: str, password: str):
         cur.execute('SELECT * FROM users WHERE email = %s AND password = %s', (email, password))
         user = cur.fetchone()
         if user:
-            # Return user object, including first_name
             return {"email": user[2], "first_name": user[1]}
     finally:
         cur.close()

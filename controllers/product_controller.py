@@ -1,5 +1,5 @@
 from flask import request 
-from models import product
+from models.product import upload_product,update_product
 import time, os
 
 def add_product_controller():
@@ -34,7 +34,7 @@ def add_product_controller():
     category_id = int(request.form.get("category_id"))
 
     try:
-        product.upload_product(
+        upload_product(
             name=name,
             description=description,
             price=price,
@@ -47,4 +47,58 @@ def add_product_controller():
             if os.path.exists(location):
                 os.remove(location)
         raise e
-    return {"message": "upload produk berhasil"}
+    return {"message": "upload produk berhasil"},200
+
+def update_product_controller(product_id):
+
+    name = request.form.get("name")
+    description = request.form.get("description")
+    price = int(request.form.get("price"))
+    quantity = int(request.form.get("quantity"))
+    category_id = int(request.form.get("category_id"))
+
+    if 'file' not in request.files:
+        try:
+            update_product(
+            product_id=product_id,
+            name=name,
+            description=description,
+            price=price,
+            quantity=quantity,
+            category_id=category_id,
+            image_location=None,
+        )
+            return {'message':'Product updated successfully'},200
+        except Exception as e:
+            raise e
+    files = request.files.getlist("file")
+    if not files:
+        return "No selected files", 400
+    allowed_file_types = ["image/jpeg", "image/jpg", "image/webp", "image/png"]
+    for file in files:
+        if file.content_type not in allowed_file_types:
+            return "File type not allowed for file: %s" % file.filename, 400
+    
+    locations = []
+    for file in files:
+        location = "static/uploads/" + str(time.time()) + "_" + file.filename
+        file.save(location)
+        locations.append(location)
+
+    try:
+        update_product(
+            product_id=product_id,
+            name=name,
+            description=description,
+            price=price,
+            quantity=quantity,
+            category_id=category_id,
+            image_location=locations,
+        )
+    except Exception as e:
+        for file in files:
+            if os.path.exists(location):
+                os.remove(location)
+        raise e
+    return {"message": "update produk berhasil"},200
+        

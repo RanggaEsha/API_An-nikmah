@@ -1,5 +1,5 @@
 from flask import Flask
-from controllers import login_controller,register_controller,add_product_controller,protected_controller
+from controllers import login_controller,register_controller,add_product_controller,protected_controller, update_product_controller
 
 
 
@@ -31,6 +31,10 @@ def register():
 @app.post('/products')
 def upload():
     return add_product_controller()
+
+@app.put('/products/<int:id>')
+def update(id):
+    return update_product_controller(id)
 
 if __name__==('__main__'):
    app.run(debug=True,port=5001,use_reloader=True,host="0.0.0.0")
