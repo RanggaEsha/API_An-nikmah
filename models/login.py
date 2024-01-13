@@ -10,7 +10,6 @@ def login_process(email: str, password: str):
             return {"username" : "%s %s" % (user[0],user[1])}
     finally:
         cur.close()
-
     return None
 
 

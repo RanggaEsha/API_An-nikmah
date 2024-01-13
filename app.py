@@ -32,6 +32,10 @@ def register():
 def get_products():
     return get_all_products_controller()
 
+@app.get('/products/<int:category_id>')
+def products_by_category(category_id):
+    return get_products_by_category_controller(category_id) 
+
 @app.post('/products')
 def upload():
     return add_product_controller()
@@ -43,6 +47,10 @@ def update(id):
 @app.delete('/products/<int:id>')
 def delete(id):
     return delete_product_controller(id)
+
+@app.get('/products/images/<int:product_id>')
+def product_images(product_id):
+    return all_product_images(product_id)
 
 @app.post('/products/images')
 def upload_image():

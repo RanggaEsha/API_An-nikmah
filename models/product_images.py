@@ -1,5 +1,23 @@
 from db import conn
 
+def all_product_images(product_id):
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT image FROM product_images where product_id = %s",(product_id,))
+        images = cur.fetchall()
+
+        list_images =[]
+        for image in images:
+            item = {
+                "image":image
+            }
+            list_images.append(item)
+        return list_images
+        
+    except Exception as e:
+        raise e
+    finally:
+        cur.close()
 
 def upload_product_images(image_location, product_id):
     cur = conn.cursor()
@@ -33,13 +51,4 @@ def update_product_images(id, image_location, product_id):
         cur.close()
 
 
-def image_id_validator(image_id):
-    cur = conn.cursor()
-    try:
-        cur.execute("SELECT * FROM product_images where id=%s", (image_id,))
-        if cur.fetchone():
-            return True
-    except Exception as e:
-        raise e
-    finally:
-        cur.close()
+

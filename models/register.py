@@ -1,7 +1,7 @@
 import sys
 sys.path.append('..')
 from db import conn
-from flask import request
+
 
 def register_proccess(request):
     first_name = request.form.get('first_name')
@@ -19,15 +19,4 @@ def register_proccess(request):
     finally:
         cur.close()
 
-def validator_register(request):
-    email = request.form.get('email')
-    
-    cur = conn.cursor()
-    try:
-        cur.execute('SELECT email,password FROM users where email = %s', (email,))
-        if cur.fetchone():
-            return True
-    except Exception as e:
-        raise e
-    finally:
-        cur.close()
+

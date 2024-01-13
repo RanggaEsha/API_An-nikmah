@@ -1,9 +1,21 @@
 from flask import request 
 from models.product import *
+from models.validator import *
 import time, os
 
 def get_all_products_controller():
     return get_all_products()
+
+def get_products_by_category_controller(category_id):
+    if not category_id or category_id == '':
+        return {"message":"kategori id harus diisi."},402
+    
+    if category_id_validator(category_id) is None:
+        return {"message":"kategori id tidak ditemukan."},402
+    
+    return get_products_by_category(category_id)
+
+    
 
 def add_product_controller():
     # Check if 'file' is in request.files
@@ -36,6 +48,9 @@ def add_product_controller():
     quantity = int(request.form.get("quantity"))
     category_id = int(request.form.get("category_id"))
 
+    if not name or not description or not price or not quantity or not category_id:
+        return {"message":"Semua inputan harus diisi."},402
+
     try:
         upload_product(
             name=name,
@@ -45,6 +60,7 @@ def add_product_controller():
             category_id=category_id,
             image_location=locations,
         )
+
     except Exception as e:
         for file in files:
             if os.path.exists(location):
@@ -62,6 +78,9 @@ def update_product_controller(product_id):
     price = int(request.form.get("price"))
     quantity = int(request.form.get("quantity"))
     category_id = int(request.form.get("category_id"))
+
+    if not name or not description or not price or not quantity or not category_id:
+        return {"message":"Semua inputan harus diisi."},402
 
     if 'file' not in request.files:
         try:

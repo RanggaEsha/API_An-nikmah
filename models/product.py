@@ -2,7 +2,6 @@ from db import conn
 import time
 from datetime import datetime
 
-
 def get_all_products():
     cur = conn.cursor()
     try:
@@ -13,6 +12,7 @@ def get_all_products():
             LEFT JOIN product_images pi ON p.id = pi.product_id
         """)
         result_set = cur.fetchall()
+        # return result_set
 
         products = {}
         for row in result_set:
@@ -76,6 +76,49 @@ def get_all_products():
 #         raise e
 #     finally:
 #         cur.close()
+
+
+def get_products_by_category(category_id):
+
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            SELECT p.id, p.name, p.description, p.price, p.quantity, p.created_at, p.category_id,
+                   pi.id AS image_id, pi.image AS image_url
+            FROM products p
+            LEFT JOIN product_images pi ON p.id = pi.product_id
+            where p.category_id=%s
+            order by p.id asc 
+        """,(category_id,))
+
+        result_set = cur.fetchall()
+        # return result_set
+
+        products = {}
+        for row in result_set:
+            product_id = row[0]
+            if product_id not in products:
+                products[product_id] = {
+                    "id": product_id,
+                    "name": row[1],
+                    "description": row[2],
+                    "price": row[3],
+                    "quantity": row[4],
+                    "created_at": row[5],
+                    "category_id": row[6],
+                    "images": [],
+                }
+
+            if row[7] is not None:
+                products[product_id]["images"].append({"id": row[7], "image": row[8]})
+
+        return list(products.values())
+    except Exception as e:
+        raise e
+    finally:
+        cur.close()
+
+
 
 
 def upload_product(name, description, price, quantity, category_id, image_location):
@@ -150,18 +193,6 @@ def update_product(
         cur.close()
 
     return "File updated successfully"
-
-
-def product_id_validator(product_id):
-    cur = conn.cursor()
-    try:
-        cur.execute("SELECT * FROM products where id=%s", (product_id,))
-        if cur.fetchone():
-            return True
-    except Exception as e:
-        raise e
-    finally:
-        cur.close()
 
 
 def delete_product(product_id):

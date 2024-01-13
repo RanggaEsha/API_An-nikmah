@@ -2,6 +2,10 @@ from models import *
 from flask import request
 import time, os
 
+def all_product_images_controller(product_id):
+    if product_id_validator(product_id) is None:
+        return {"message": "ID produk tidak ditemukan"},404
+    all_product_images(product_id)
 def upload_image_controller():
     if "file" not in request.files:
         return "no file part"
@@ -26,6 +30,9 @@ def upload_image_controller():
         locations.append(location)
 
     product_id = request.form.get("product_id")
+
+    if not product_id or product_id=="":
+        return {"message": "tambahkan ID produk"}
     
     if product_id_validator(product_id=product_id) is None:
         return {"message": "ID produk tidak ditemukan"},404
@@ -66,6 +73,9 @@ def update_image_controller(id):
         locations.append(location)
     
     product_id = request.form.get("product_id")
+    if not product_id or product_id=="":
+        return {"message": "tambahkan ID produk"}
+
     if product_id_validator(product_id=product_id) is None:
         return {"message": "ID produk tidak ditemukan"},404
 

@@ -16,7 +16,6 @@ def login_controller():
     if user:
         access_token = create_access_token(identity=user["username"])
         return {'token': access_token}
-    
     return {"msg": "Username atau password salah"}, 401
 
 
