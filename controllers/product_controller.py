@@ -1,5 +1,5 @@
 from flask import request 
-from models.product import upload_product,update_product
+from models.product import upload_product,update_product,product_id_validator,delete_product
 import time, os
 
 def add_product_controller():
@@ -51,6 +51,9 @@ def add_product_controller():
 
 def update_product_controller(product_id):
 
+    if product_id_validator(product_id) is None:
+        return {"message": "ID produk tidak ditemukan"},404
+
     name = request.form.get("name")
     description = request.form.get("description")
     price = int(request.form.get("price"))
@@ -101,4 +104,11 @@ def update_product_controller(product_id):
                 os.remove(location)
         raise e
     return {"message": "update produk berhasil"},200
-        
+
+
+def delete_product_controller(product_id: int):
+    if product_id_validator(product_id):   
+        delete_product(product_id)
+        return {"message": "berhasil menghapus produk"},200
+    return {"message": "ID produk tidak ditemukan"},404
+

@@ -51,3 +51,30 @@ def update_product(product_id, name, description, price, quantity, category_id, 
 
     return "File updated successfully"
 
+def product_id_validator(product_id):
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT * FROM products where id=%s",(product_id,))
+        if cur.fetchone():
+           return True
+    except Exception as e:
+        raise e
+    finally:
+        cur.close()
+
+
+def delete_product(product_id):
+    cur = conn.cursor()
+    try:
+        cur.execute("DELETE FROM products WHERE id = %s",(product_id,))
+        cur.execute("DELETE FROM product_images WHERE product_id = %s",(product_id,))
+        # data = cur.fetchone()
+        # return(data)
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        cur.close()
+
+        
