@@ -12,10 +12,9 @@ def login_controller():
     email = request.form.get('email')
     password = request.form.get('password')
     user = login_process(email=email, password=password)
-    print(user['first'])
 
     if user:
-        access_token = create_access_token(identity=user["first_name"])
+        access_token = create_access_token(identity=user["username"])
         return {'token': access_token}
     
     return {"msg": "Username atau password salah"}, 401

@@ -1,6 +1,9 @@
 from flask import request 
-from models.product import upload_product,update_product,product_id_validator,delete_product
+from models.product import *
 import time, os
+
+def get_all_products_controller():
+    return get_all_products()
 
 def add_product_controller():
     # Check if 'file' is in request.files
@@ -111,4 +114,6 @@ def delete_product_controller(product_id: int):
         delete_product(product_id)
         return {"message": "berhasil menghapus produk"},200
     return {"message": "ID produk tidak ditemukan"},404
+
+
 
