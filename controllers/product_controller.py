@@ -6,12 +6,8 @@ import time, os
 def get_all_products_controller():
     return get_all_products()
 
-def get_products_by_category_controller():
+def get_products_by_category_controller(category_id):
     
-    category_id = request.args.get('category_id')
-
-    if not category_id or category_id == '':
-        return {"message":"kategori id harus diisi."},402
     
     if category_id_validator(category_id) is None:
         return {"message":"kategori id tidak ditemukan."},402
