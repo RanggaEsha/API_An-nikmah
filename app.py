@@ -68,5 +68,14 @@ def upload_image():
 def update_image(id):
     return update_image_controller(id)
 
+@app.delete('/products/images/<int:id>')
+def delete_image(id):
+   return delete_image_by_id_controller(id)
+
+@app.delete('/products/images/product_id/<int:product_id>')
+def delete_images(product_id):
+    return delete_images_by_product_id_controller(product_id)
+
+
 if __name__==('__main__'):
    app.run(debug=True,port=5001,use_reloader=True,host="0.0.0.0")

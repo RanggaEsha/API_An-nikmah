@@ -33,6 +33,17 @@ def image_id_validator(image_id):
     finally:
         cur.close()
 
+def image_product_id_validator(product_id):
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT * FROM product_images where product_id=%s", (product_id,))
+        if cur.fetchone():
+            return True
+    except Exception as e:
+        raise e
+    finally:
+        cur.close()
+
 def validator_register(request):
     email = request.form.get('email')
     
