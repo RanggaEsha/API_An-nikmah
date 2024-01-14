@@ -41,7 +41,7 @@ def update_product_images(id, image_location, product_id):
         for image in image_location:
             cur.execute(
                 "UPDATE product_images SET image=%s, product_id=%s WHERE id=%s",
-                (image, product_id, id),
+                (image, product_id, id)
             )
         conn.commit()
     except Exception as e:

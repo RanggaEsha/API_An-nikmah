@@ -1,6 +1,6 @@
 from db import conn
 
-def category_id_validator(category_id):
+def product_category_id_validator(category_id):
     cur = conn.cursor()
     try:
         cur.execute("SELECT * FROM products where category_id=%s", (category_id,))
@@ -50,6 +50,17 @@ def validator_register(request):
     cur = conn.cursor()
     try:
         cur.execute('SELECT email,password FROM users where email = %s', (email,))
+        if cur.fetchone():
+            return True
+    except Exception as e:
+        raise e
+    finally:
+        cur.close()
+
+def category_id_validator(id):
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT * FROM categories where id=%s", (id,))
         if cur.fetchone():
             return True
     except Exception as e:

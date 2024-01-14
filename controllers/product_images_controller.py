@@ -76,7 +76,7 @@ def update_image_controller(id):
     
     product_id = request.form.get("product_id")
     if not product_id or product_id=="":
-        return {"message": "tambahkan ID produk"}
+        return {"message": "tambahkan ID produk"},404
 
     if product_id_validator(product_id=product_id) is None:
         return {"message": "ID produk tidak ditemukan"},404

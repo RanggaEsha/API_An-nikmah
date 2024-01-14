@@ -76,6 +76,25 @@ def delete_image(id):
 def delete_images(product_id):
     return delete_images_by_product_id_controller(product_id)
 
+@app.get('/products/categories')
+def get_all_categories():
+    return get_categories_controller()
+
+@app.get('/products/categories/<int:id>')
+def get_category_by_id(id):
+    return get_category_controller(id)
+
+@app.post('/products/categories')
+def add_category():
+    return add_category_controller()
+
+@app.put('/products/categories/<int:id>')
+def update_category_by_id(id):
+    return update_category_controller(id)
+
+@app.delete('/products/categories/<int:id>')
+def delete_category_by_id(id):
+    return delete_category_controller(id)
 
 if __name__==('__main__'):
    app.run(debug=True,port=5001,use_reloader=True,host="0.0.0.0")

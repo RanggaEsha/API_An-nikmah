@@ -1,6 +1,5 @@
 from flask import request 
-from models.product import *
-from models.validator import *
+from models import *
 import time, os
 
 def get_all_products_controller():
@@ -9,7 +8,7 @@ def get_all_products_controller():
 def get_products_by_category_controller(category_id):
     
     
-    if category_id_validator(category_id) is None:
+    if product_category_id_validator(category_id) is None:
         return {"message":"kategori id tidak ditemukan."},402
     
     return get_products_by_category(category_id)
