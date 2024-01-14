@@ -1,5 +1,4 @@
 from db import conn
-import time
 from datetime import datetime
 
 def get_all_products():
@@ -37,7 +36,6 @@ def get_all_products():
         raise e
     finally:
         cur.close()
-
 
 
 # def get_all_products():
@@ -92,6 +90,46 @@ def get_products_by_category(category_id):
         """,(category_id,))
 
         result_set = cur.fetchall()
+
+        products = {}
+        for row in result_set:
+            product_id = row[0]
+            if product_id not in products:
+                products[product_id] = {
+                    "id": product_id,
+                    "name": row[1],
+                    "description": row[2],
+                    "price": row[3],
+                    "quantity": row[4],
+                    "created_at": row[5],
+                    "category_id": row[6],
+                    "images": [],
+                }
+
+            if row[7] is not None:
+                products[product_id]["images"].append({"id": row[7], "image": row[8]})
+
+        return list(products.values())
+    except Exception as e:
+        raise e
+    finally:
+        cur.close()
+
+
+def get_products_by_id(id):
+
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            SELECT p.id, p.name, p.description, p.price, p.quantity, p.created_at, p.category_id,
+                   pi.id AS image_id, pi.image AS image_url
+            FROM products p
+            LEFT JOIN product_images pi ON p.id = pi.product_id
+            where p.id=%s
+            order by p.id asc 
+        """,(id,))
+
+        result_set = cur.fetchall()
         # return result_set
 
         products = {}
@@ -118,6 +156,59 @@ def get_products_by_category(category_id):
     finally:
         cur.close()
 
+
+def get_products_by_price_range(max_price, min_price):
+    cur = conn.cursor()
+    try:
+        if max_price and min_price:
+            cur.execute("""
+                SELECT p.id, p.name, p.description, p.price, p.quantity, p.created_at, p.category_id,
+                    pi.id AS image_id, pi.image AS image_url
+                FROM products p
+                LEFT JOIN product_images pi ON p.id = pi.product_id
+                WHERE p.price > %s AND p.price < %s;
+            """, (min_price, max_price))
+        elif not min_price:
+            cur.execute("""
+                SELECT p.id, p.name, p.description, p.price, p.quantity, p.created_at, p.category_id,
+                    pi.id AS image_id, pi.image AS image_url
+                FROM products p
+                LEFT JOIN product_images pi ON p.id = pi.product_id
+                WHERE p.price < %s;
+            """, (max_price,))
+        elif not max_price:
+            cur.execute("""
+                SELECT p.id, p.name, p.description, p.price, p.quantity, p.created_at, p.category_id,
+                    pi.id AS image_id, pi.image AS image_url
+                FROM products p
+                LEFT JOIN product_images pi ON p.id = pi.product_id
+                WHERE p.price > %s;
+            """, (min_price,))
+        
+        result_set = cur.fetchall()
+        products = {}
+        for row in result_set:
+            product_id = row[0]
+            if product_id not in products:
+                products[product_id] = {
+                    "id": product_id,
+                    "name": row[1],
+                    "description": row[2],
+                    "price": row[3],
+                    "quantity": row[4],
+                    "created_at": row[5],
+                    "category_id": row[6],
+                    "images": [],
+                }
+
+            if row[7] is not None:
+                products[product_id]["images"].append({"id": row[7], "image": row[8]})
+
+        return list(products.values())
+    except Exception as e:
+        raise e
+    finally:
+        cur.close()
 
 
 

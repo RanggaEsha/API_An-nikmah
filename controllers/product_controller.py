@@ -6,7 +6,10 @@ import time, os
 def get_all_products_controller():
     return get_all_products()
 
-def get_products_by_category_controller(category_id):
+def get_products_by_category_controller():
+    
+    category_id = request.args.get('category_id')
+
     if not category_id or category_id == '':
         return {"message":"kategori id harus diisi."},402
     
@@ -15,6 +18,30 @@ def get_products_by_category_controller(category_id):
     
     return get_products_by_category(category_id)
 
+def get_products_by_id_controller(id):
+    if not id or id == '':
+        return {"message":"ID produk harus diisi."},402
+    
+    if product_id_validator(id) is None:
+        return {"message":"ID produk tidak ditemukan."},402
+    
+    return get_products_by_id(id)
+
+
+def get_products_by_price_range_controller():
+    max_price = request.args.get('max_price')
+    min_price = request.args.get('min_price')
+
+    if not max_price and not min_price:
+        return {"message": "salah satu dari max price atau min price harus diisi."}, 402
+
+    try:
+        max_price = int(max_price) if max_price else None
+        min_price = int(min_price) if min_price else None
+    except ValueError:
+        return {"message": "max price dan min price harus berupa angka yang valid."}, 402
+
+    return get_products_by_price_range(max_price, min_price)
     
 
 def add_product_controller():

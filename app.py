@@ -32,9 +32,17 @@ def register():
 def get_products():
     return get_all_products_controller()
 
-@app.get('/products/<int:category_id>')
-def products_by_category(category_id):
-    return get_products_by_category_controller(category_id) 
+@app.get('/products/<int:id>')
+def products_by_id(id):
+    return get_products_by_id_controller(id) 
+
+@app.get('/products')
+def products_by_category():
+    return get_products_by_category_controller() 
+
+@app.get('/products/price')
+def products_price_filter():
+    return get_products_by_price_range_controller()
 
 @app.post('/products')
 def upload():
