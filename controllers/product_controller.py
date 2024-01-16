@@ -133,6 +133,7 @@ def update_product_controller(product_id):
         locations.append(location)
 
     try:
+        images = all_product_images(product_id=product_id)
         update_product(
             product_id=product_id,
             name=name,
@@ -142,6 +143,9 @@ def update_product_controller(product_id):
             category_id=category_id,
             image_location=locations,
         )
+        for image in images:
+            if os.path.exists(image["image"]):
+                os.remove(image["image"])
     except Exception as e:
         for file in files:
             if os.path.exists(location):
@@ -151,8 +155,12 @@ def update_product_controller(product_id):
 
 
 def delete_product_controller(product_id: int):
-    if product_id_validator(product_id):   
+    if product_id_validator(product_id): 
+        images = all_product_images(product_id=product_id)
         delete_product(product_id)
+        for image in images:
+            if os.path.exists(image["image"]):
+                os.remove(image["image"])
         return {"message": "berhasil menghapus produk"},200
     return {"message": "ID produk tidak ditemukan"},404
 

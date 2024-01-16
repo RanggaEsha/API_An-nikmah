@@ -1,93 +1,96 @@
 from db import conn
 from datetime import datetime
 
+# def get_all_products(keyword: str = ""):
+#     cur = conn.cursor()
+#     try:
+#         keyword = "%" + keyword + "%"
+#         cur.execute(
+#             """
+#             SELECT p.id, p.name, p.description, p.price, p.quantity, p.created_at, p.category_id,
+#                    pi.id AS image_id, pi.image AS image_url
+#             FROM products p
+#             LEFT JOIN product_images pi ON p.id = pi.product_id
+#             where p.name ilike %s
+#         """,
+#             (keyword,),
+#         )
+#         result_set = cur.fetchall()
+#         # return result_set
+
+#         products = {}
+#         for row in result_set:
+#             product_id = row[0]
+#             if product_id not in products:
+#                 products[product_id] = {
+#                     "id": product_id,
+#                     "name": row[1],
+#                     "description": row[2],
+#                     "price": row[3],
+#                     "quantity": row[4],
+#                     "created_at": row[5],
+#                     "category_id": row[6],
+#                     "images": [],
+#                 }
+
+#             if row[7] is not None:
+#                 products[product_id]["images"].append({"id": row[7], "image": row[8]})
+
+#         return list(products.values())
+#     except Exception as e:
+#         raise e
+#     finally:
+#         cur.close()
+
 def get_all_products():
     cur = conn.cursor()
     try:
-        cur.execute("""
-            SELECT p.id, p.name, p.description, p.price, p.quantity, p.created_at, p.category_id,
-                   pi.id AS image_id, pi.image AS image_url
-            FROM products p
-            LEFT JOIN product_images pi ON p.id = pi.product_id
-        """)
-        result_set = cur.fetchall()
-        # return result_set
+        cur.execute("SELECT * FROM products")
+        products = cur.fetchall()
+        list_products = []
+        for item in products:
+            items = {
+                "id": item[0],
+                "name": item[1],
+                "description": item[2],
+                "price": item[3],
+                "quantity": item[4],
+                "created_at": item[5],
+                "category_id": item[6],
+                "images": [],
+            }
+            list_products.append(items)
+            # get images
+            cur.execute(
+                "SELECT * FROM product_images WHERE product_id = %s", (item[0],)
+            )
+            images = cur.fetchall()
 
-        products = {}
-        for row in result_set:
-            product_id = row[0]
-            if product_id not in products:
-                products[product_id] = {
-                    "id": product_id,
-                    "name": row[1],
-                    "description": row[2],
-                    "price": row[3],
-                    "quantity": row[4],
-                    "created_at": row[5],
-                    "category_id": row[6],
-                    "images": [],
-                }
+            for image in images:
+                item_image = {"id": image[0], "image": image[1]}
+                list_products[-1]["images"].append(item_image)
 
-            if row[7] is not None:
-                products[product_id]["images"].append({"id": row[7], "image": row[8]})
-
-        return list(products.values())
+        return list_products
     except Exception as e:
         raise e
     finally:
         cur.close()
 
 
-# def get_all_products():
-#     cur = conn.cursor()
-#     try:
-#         cur.execute("SELECT * FROM products")
-#         products = cur.fetchall()
-
-#         list_products = []
-#         for item in products:
-#             items = {
-#                 "id": item[0],
-#                 "name": item[1],
-#                 "description": item[2],
-#                 "price": item[3],
-#                 "quantity": item[4],
-#                 "created_at": item[5],
-#                 "category_id": item[6],
-#                 "images": [],
-#             }
-#             list_products.append(items)
-
-#             # get images
-#             cur.execute(
-#                 "SELECT * FROM product_images WHERE product_id = %s", (item[0],)
-#             )
-#             images = cur.fetchall()
-
-#             for image in images:
-#                 item_image = {"id": image[0], "image": image[1]}
-
-#                 list_products[-1]["images"].append(item_image)
-
-#         return list_products
-#     except Exception as e:
-#         raise e
-#     finally:
-#         cur.close()
-
-
 def get_products_by_category(category_id):
-
     cur = conn.cursor()
     try:
-        cur.execute("""
+        cur.execute(
+            """
             SELECT p.id, p.name, p.description, p.price, p.quantity, p.created_at, p.category_id,
                    pi.id AS image_id, pi.image AS image_url
             FROM products p
             LEFT JOIN product_images pi ON p.id = pi.product_id
             where p.category_id=%s
             order by p.id asc 
-        """,(category_id,))
+        """,
+            (category_id,),
+        )
 
         result_set = cur.fetchall()
 
@@ -117,17 +120,19 @@ def get_products_by_category(category_id):
 
 
 def get_products_by_id(id):
-
     cur = conn.cursor()
     try:
-        cur.execute("""
+        cur.execute(
+            """
             SELECT p.id, p.name, p.description, p.price, p.quantity, p.created_at, p.category_id,
                    pi.id AS image_id, pi.image AS image_url
             FROM products p
             LEFT JOIN product_images pi ON p.id = pi.product_id
             where p.id=%s
             order by p.id asc 
-        """,(id,))
+        """,
+            (id,),
+        )
 
         result_set = cur.fetchall()
         # return result_set
@@ -160,31 +165,31 @@ def get_products_by_id(id):
 def get_products_by_price_range(max_price, min_price):
     cur = conn.cursor()
     try:
+        where_condition = ""
+
+        values = None
+
         if max_price and min_price:
-            cur.execute("""
-                SELECT p.id, p.name, p.description, p.price, p.quantity, p.created_at, p.category_id,
-                    pi.id AS image_id, pi.image AS image_url
-                FROM products p
-                LEFT JOIN product_images pi ON p.id = pi.product_id
-                WHERE p.price > %s AND p.price < %s;
-            """, (min_price, max_price))
+            where_condition = "p.price > %s AND p.price < %s"
+            values = (min_price, max_price)
         elif not min_price:
-            cur.execute("""
+            where_condition = "p.price > %s"
+            values=(min_price,)
+
+
+        query = f"""
                 SELECT p.id, p.name, p.description, p.price, p.quantity, p.created_at, p.category_id,
                     pi.id AS image_id, pi.image AS image_url
                 FROM products p
                 LEFT JOIN product_images pi ON p.id = pi.product_id
-                WHERE p.price < %s;
-            """, (max_price,))
-        elif not max_price:
-            cur.execute("""
-                SELECT p.id, p.name, p.description, p.price, p.quantity, p.created_at, p.category_id,
-                    pi.id AS image_id, pi.image AS image_url
-                FROM products p
-                LEFT JOIN product_images pi ON p.id = pi.product_id
-                WHERE p.price > %s;
-            """, (min_price,))
-        
+                WHERE {where_condition};
+            """
+        cur.execute(
+                query,
+                values,
+            )
+
+
         result_set = cur.fetchall()
         products = {}
         for row in result_set:
@@ -209,7 +214,6 @@ def get_products_by_price_range(max_price, min_price):
         raise e
     finally:
         cur.close()
-
 
 
 def upload_product(name, description, price, quantity, category_id, image_location):

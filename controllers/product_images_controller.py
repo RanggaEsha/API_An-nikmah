@@ -2,9 +2,10 @@ from models import *
 from flask import request
 import time, os
 
+
 def all_product_images_controller(product_id):
     if product_id_validator(product_id) is None:
-        return {"message": "ID produk tidak ditemukan"},404
+        return {"message": "ID produk tidak ditemukan"}, 404
     all_product_images(product_id)
 
 
@@ -33,23 +34,21 @@ def upload_image_controller():
 
     product_id = request.form.get("product_id")
 
-    if not product_id or product_id=="":
+    if not product_id or product_id == "":
         return {"message": "tambahkan ID produk"}
-    
+
     if product_id_validator(product_id=product_id) is None:
-        return {"message": "ID produk tidak ditemukan"},404
-    
+        return {"message": "ID produk tidak ditemukan"}, 404
+
     try:
-        upload_product_images(
-            image_location=locations,
-            product_id=product_id
-        )
+        upload_product_images(image_location=locations, product_id=product_id)
     except Exception as e:
         for file in files:
             if os.path.exists(location):
                 os.remove(location)
         raise e
-    return {"message": "upload produk berhasil"},200
+    return {"message": "upload produk berhasil"}, 200
+
 
 def update_image_controller(id):
     if "file" not in request.files:
@@ -73,41 +72,53 @@ def update_image_controller(id):
         location = "static/uploads/" + str(time.time()) + "_" + file.filename
         file.save(location)
         locations.append(location)
-    
+
     product_id = request.form.get("product_id")
-    if not product_id or product_id=="":
-        return {"message": "tambahkan ID produk"},404
+    if not product_id or product_id == "":
+        return {"message": "tambahkan ID produk"}, 404
 
     if product_id_validator(product_id=product_id) is None:
-        return {"message": "ID produk tidak ditemukan"},404
+        return {"message": "ID produk tidak ditemukan"}, 404
 
     if image_id_validator(id) is None:
-        return {"message": "ID image tidak ditemukan"},404
-    
+        return {"message": "ID image tidak ditemukan"}, 404
+
     try:
-        update_product_images(
-            id,
-            image_location=locations,
-            product_id=product_id
-        )
+        images = all_product_images(product_id=product_id)
+        update_product_images(id, image_location=locations, product_id=product_id)
+
+        # membersihkan data gambar yang lama
+        for image in images:
+            if os.path.exists(image["image"]):
+                os.remove(image["image"])
+
     except Exception as e:
         for file in files:
             if os.path.exists(location):
                 os.remove(location)
         raise e
-    return {"message": "update produk berhasil"},200
+    return {"message": "update produk berhasil"}, 200
 
-        
+
 def delete_image_by_id_controller(id):
     if image_id_validator(id) is None:
-        return {"message": "ID image tidak ditemukan"},404
+        return {"message": "ID image tidak ditemukan"}, 404
+    image = get_product_image_by_id(id)
     delete_image_by_id(id)
-    return {"message": "image berhasil dihapus"},200
+    if os.path.exists(image["image"]):
+            os.remove(image["image"])
+    return {"message": "image berhasil dihapus"}, 200
+
+   
 
 def delete_images_by_product_id_controller(product_id):
     if image_product_id_validator(product_id) is None:
-        return {"message": "Product ID image tidak ditemukan"},404
+        return {"message": "Product ID image tidak ditemukan"}, 404
+    images = all_product_images(product_id=product_id)
     delete_images_by_product_id(product_id)
-    return {"message": "image berhasil dihapus"},200
-    
-    
+    # membersihkan data gambar yang lama
+    for image in images:
+        if os.path.exists(image["image"]):
+            os.remove(image["image"])
+
+    return {"message": "image berhasil dihapus"}, 200

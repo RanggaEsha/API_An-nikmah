@@ -1,23 +1,43 @@
 from db import conn
 
+
 def all_product_images(product_id):
     cur = conn.cursor()
     try:
-        cur.execute("SELECT image FROM product_images where product_id = %s",(product_id,))
+        cur.execute(
+            "SELECT image FROM product_images where product_id = %s", (product_id,)
+        )
         images = cur.fetchall()
 
-        list_images =[]
+        list_images = []
         for image in images:
-            item = {
-                "image":image
-            }
+            item = {"image": image[0]}
             list_images.append(item)
         return list_images
-        
+
     except Exception as e:
         raise e
     finally:
         cur.close()
+
+
+def get_product_image_by_id(id):
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT image FROM product_images where id = %s", (id,))
+        images = cur.fetchall()
+
+        list_images = []
+        for image in images:
+            item = {"image": image}
+            list_images.append(item)
+        return list_images
+
+    except Exception as e:
+        raise e
+    finally:
+        cur.close()
+
 
 def upload_product_images(image_location, product_id):
     cur = conn.cursor()
@@ -40,8 +60,8 @@ def update_product_images(id, image_location, product_id):
     try:
         for image in image_location:
             cur.execute(
-                "UPDATE product_images SET image=%s, product_id=%s WHERE id=%s",
-                (image, product_id, id)
+                "UPDATE product_images SET image=%s WHERE product_id=%s and id=%s",
+                (image, product_id, id),
             )
         conn.commit()
     except Exception as e:
@@ -61,6 +81,7 @@ def delete_image_by_id(id):
         raise e
     finally:
         cur.close()
+
 
 def delete_images_by_product_id(product_id):
     cur = conn.cursor()
