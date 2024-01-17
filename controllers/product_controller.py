@@ -3,24 +3,25 @@ from models import *
 import time, os
 
 def get_all_products_controller():
-    return get_all_products()
+    limit = request.args.get("limit",5 )
+    page = request.args.get("page",1)
+    keyword = request.args.get("keyword")
+    return get_all_products(page=page,limit=limit,keyword=keyword)
 
 def get_products_by_category_controller(category_id):
-    
-    
-    if product_category_id_validator(category_id) is None:
+    if get_products_by_category(category_id) is None:
         return {"message":"kategori id tidak ditemukan."},402
-    
     return get_products_by_category(category_id)
 
 def get_products_by_id_controller(id):
     if not id or id == '':
         return {"message":"ID produk harus diisi."},402
-    
-    if product_id_validator(id) is None:
+    if get_products_by_id(id) is None:
         return {"message":"ID produk tidak ditemukan."},402
-    
-    return get_products_by_id(id)
+    images = all_product_images(id)
+    product = get_products_by_id(id)
+    product["images"]= images
+    return product
 
 
 def get_products_by_price_range_controller():
@@ -40,30 +41,17 @@ def get_products_by_price_range_controller():
     
 
 def add_product_controller():
-    # Check if 'file' is in request.files
     if "file" not in request.files:
         return "no file part"
-
     files = request.files.getlist("file")
-
-    # Check if the file is selected
     if not files:
         return "No selected files"
 
     allowed_files = ["image/jpeg", "image/jpg", "image/webp", "image/png"]
-    # Check if the file type is allowed
     for file in files:
         if file.content_type not in allowed_files:
             return "File type not allowed"
 
-    # Save the uploaded file to a specific folder
-    locations = []
-    for file in files:
-        location = "static/uploads/" + str(time.time()) + "_" + file.filename
-        file.save(location)
-        locations.append(location)
-
-    # product_id = request.form.get('product_id')
     name = request.form.get("name")
     description = request.form.get("description")
     price = int(request.form.get("price"))
@@ -73,28 +61,32 @@ def add_product_controller():
     if not name or not description or not price or not quantity or not category_id:
         return {"message":"Semua inputan harus diisi."},402
 
+    locations = []
+    for file in files:
+        location = "static/uploads/" + str(time.time()) + "_" + file.filename
+        file.save(location)
+        locations.append(location)
     try:
-        upload_product(
+        
+        last_inserted_id = upload_product(
             name=name,
             description=description,
             price=price,
             quantity=quantity,
             category_id=category_id,
-            image_location=locations,
         )
+        upload_product_images(locations,last_inserted_id)
 
     except Exception as e:
-        for file in files:
+        for file in locations:
             if os.path.exists(location):
                 os.remove(location)
         raise e
     return {"message": "upload produk berhasil"},200
 
 def update_product_controller(product_id):
-
-    if product_id_validator(product_id) is None:
+    if get_products_by_id(product_id) is None:
         return {"message": "ID produk tidak ditemukan"},404
-
     name = request.form.get("name")
     description = request.form.get("description")
     price = int(request.form.get("price"))
@@ -113,7 +105,7 @@ def update_product_controller(product_id):
             price=price,
             quantity=quantity,
             category_id=category_id,
-            image_location=None,
+
         )
             return {'message':'Product updated successfully'},200
         except Exception as e:
@@ -155,7 +147,7 @@ def update_product_controller(product_id):
 
 
 def delete_product_controller(product_id: int):
-    if product_id_validator(product_id): 
+    if get_products_by_id(product_id): 
         images = all_product_images(product_id=product_id)
         delete_product(product_id)
         for image in images:
@@ -164,5 +156,76 @@ def delete_product_controller(product_id: int):
         return {"message": "berhasil menghapus produk"},200
     return {"message": "ID produk tidak ditemukan"},404
 
+# PRODUCT IMAGES MODELS
+
+def all_product_images_controller(product_id):
+    if get_products_by_id(product_id) is None:
+        return {"message": "ID produk tidak ditemukan"}, 404
+    all_product_images(product_id)
 
 
+def upload_image_controller():
+    if "file" not in request.files:
+        return "no file part"
+
+    files = request.files.getlist("file")
+
+    # Check if the file is selected
+    if not files:
+        return "No selected files"
+
+    allowed_files = ["image/jpeg", "image/jpg", "image/webp", "image/png"]
+    # Check if the file type is allowed
+    for file in files:
+        if file.content_type not in allowed_files:
+            return "File type not allowed"
+
+    # Save the uploaded file to a specific folder
+    locations = []
+    for file in files:
+        location = "static/uploads/" + str(time.time()) + "_" + file.filename
+        file.save(location)
+        locations.append(location)
+
+    product_id = request.form.get("product_id")
+
+    if not product_id or product_id == "":
+        return {"message": "tambahkan ID produk"}
+
+    if get_products_by_id(product_id) is None:
+        return {"message": "ID produk tidak ditemukan"}, 404
+
+    try:
+        upload_product_images(image_location=locations, product_id=product_id)
+    except Exception as e:
+        for file in files:
+            if os.path.exists(location):
+                os.remove(location)
+        raise e
+    return {"message": "upload produk berhasil"}, 200
+
+
+
+def delete_image_by_id_controller(id):
+    if all_product_images(id) is None:
+        return {"message": "ID image tidak ditemukan"}, 404
+    image = get_product_image_by_id(id)
+    # return image
+    if os.path.exists(image["image"]):
+            os.remove(image["image"])
+    delete_image_by_id(id)
+    return {"message": "image berhasil dihapus"}, 200
+
+   
+
+def delete_images_by_product_id_controller(product_id):
+    if all_product_images(product_id) is None:
+        return {"message": "Product ID image tidak ditemukan"}, 404
+    images = all_product_images(product_id=product_id)
+    delete_images_by_product_id(product_id)
+    # membersihkan data gambar yang lama
+    for image in images:
+        if os.path.exists(image["image"]):
+            os.remove(image["image"])
+
+    return {"message": "image berhasil dihapus"}, 200

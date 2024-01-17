@@ -5,7 +5,7 @@ def get_categories_controller():
     return get_categories()
 
 def get_category_controller(id):
-    if category_id_validator(id) is None:
+    if get_category(id) is None:
         return {'message':'ID kategori tidak ditemukan'},404
     return get_category(id)
 
@@ -16,14 +16,14 @@ def add_category_controller():
 
 def update_category_controller(id):
     name = request.form.get('name')
-    if category_id_validator(id) is None:
+    if get_category(id) is None:
         return {'message':'ID kategori tidak ditemukan'},404
     update_category(id,name)
     return {'message':'ID kategori berhasil diubah'},200
 
 
 def delete_category_controller(id):
-    if category_id_validator(id):
+    if get_category(id):
         delete_category(id)
         return {'message':'kategori berhasil dihapus'},200
     return {"message": "ID kategori tidak ditemukan"},404

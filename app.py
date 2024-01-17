@@ -15,6 +15,8 @@ CORS(app)
 app.config["JWT_SECRET_KEY"] = "bacotttttttt"
 jwt = JWTManager(app)
 
+# LOGIN AND REGISTER
+
 @app.get('/protected')
 @jwt_required()
 def get_all_products():
@@ -27,6 +29,8 @@ def login_process():
 @app.post('/register')
 def register():
     return register_controller()
+
+# PRODUCTS
 
 @app.get('/products')
 def get_products():
@@ -52,9 +56,12 @@ def upload():
 def update(id):
     return update_product_controller(id)
 
+
 @app.delete('/products/<int:id>')
 def delete(id):
     return delete_product_controller(id)
+
+# IMAGES
 
 @app.get('/products/images/<int:product_id>')
 def product_images(product_id):
@@ -64,10 +71,6 @@ def product_images(product_id):
 def upload_image():
     return upload_image_controller()
 
-@app.put('/products/images/<int:id>')
-def update_image(id):
-    return update_image_controller(id)
-
 @app.delete('/products/images/<int:id>')
 def delete_image(id):
    return delete_image_by_id_controller(id)
@@ -75,6 +78,8 @@ def delete_image(id):
 @app.delete('/products/images/product_id/<int:product_id>')
 def delete_images(product_id):
     return delete_images_by_product_id_controller(product_id)
+
+# CATEGORIES
 
 @app.get('/products/categories')
 def get_all_categories():
