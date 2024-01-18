@@ -40,14 +40,6 @@ def get_products():
 def products_by_id(id):
     return get_products_by_id_controller(id) 
 
-@app.get('/products/category/<int:category_id>')
-def products_by_category(category_id):
-    return get_products_by_category_controller(category_id) 
-
-@app.get('/products/price')
-def products_price_filter():
-    return get_products_by_price_range_controller()
-
 @app.post('/products')
 def upload():
     return add_product_controller()
@@ -63,7 +55,7 @@ def delete(id):
 
 # IMAGES
 
-@app.get('/products/images/<int:product_id>')
+@app.get('/products/<int:product_id>/images')
 def product_images(product_id):
     return all_product_images(product_id)
 
@@ -71,33 +63,37 @@ def product_images(product_id):
 def upload_image():
     return upload_image_controller()
 
-@app.delete('/products/images/<int:id>')
-def delete_image(id):
-   return delete_image_by_id_controller(id)
+@app.delete('/products/<int:product_id>/images/<int:id>')
+def delete_image(product_id,id):
+   return delete_image_by_id_controller(product_id,id)
 
-@app.delete('/products/images/product_id/<int:product_id>')
+@app.delete('/products/<int:product_id>/images')
 def delete_images(product_id):
     return delete_images_by_product_id_controller(product_id)
 
 # CATEGORIES
 
-@app.get('/products/categories')
+@app.get('/categories')
 def get_all_categories():
     return get_categories_controller()
 
-@app.get('/products/categories/<int:id>')
+@app.get('/category/<int:category_id>/products')
+def products_by_category(category_id):
+    return get_products_by_category_controller(category_id) 
+
+@app.get('/categories/<int:id>')
 def get_category_by_id(id):
     return get_category_controller(id)
 
-@app.post('/products/categories')
+@app.post('/categories')
 def add_category():
     return add_category_controller()
 
-@app.put('/products/categories/<int:id>')
+@app.put('/categories/<int:id>')
 def update_category_by_id(id):
     return update_category_controller(id)
 
-@app.delete('/products/categories/<int:id>')
+@app.delete('/categories/<int:id>')
 def delete_category_by_id(id):
     return delete_category_controller(id)
 

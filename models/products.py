@@ -2,34 +2,79 @@ from db import conn
 from datetime import datetime
 
 
-def get_all_products(page: int, limit: int, keyword: str = None):
+def get_all_products(page: int, limit: int, category: str, keyword: str = None, min_price:int=None, max_price:int=None):
     cur = conn.cursor()
     try:
         page = int(page)
         page = (page - 1) * limit
-        values = {"limit": limit, "offset": page}
-        where_keyword = ""
+        values = {"limit": limit, "offset": page}  
+        join = []
+        where = []
+        
         if keyword is not None:
-            where_keyword = "WHERE name ilike %(keyword)s"
-            values["keyword"] = "%" + keyword + "%"
-        query = f"""SELECT * FROM products  {where_keyword} limit %(limit)s offset %(offset)s"""
+            where.append("p.name ilike %(keyword)s")
+            values['keyword']= "%" + keyword + "%"
+
+        if category is not None:
+            where.append("categories.name ilike %(category)s")
+            join.append("JOIN categories on p.category_id = categories.id")
+            values['category']= "%" + category + "%"
+
+        if max_price is not None and min_price is not None:
+            where.append("price BETWEEN %(min_price)s AND %(max_price)s")
+            values['min_price']= "%" + min_price + "%"
+            values['max_price']= "%" + max_price + "%" 
+
+        elif max_price is None:
+            where.append("price >= %(min_price)s")
+            values['min_price']=  min_price
+
+        elif min_price is None:
+            where.append("price <= %(max_price)s")
+            values['max_price']=  max_price
+
+        if len(where) > 0:
+            where = "WHERE " + " AND ".join(where)
+        else:
+            where = ""
+        query = f"""
+        SELECT * FROM products p 
+        {' '.join(join)} {where}
+        limit %(limit)s offset %(offset)s
+        """
+        print(query)
         cur.execute(query, values)
+        conn.commit()
         products = cur.fetchall()
         list_products = []
         for item in products:
-            items = {
-                "id": item[0],
-                "name": item[1],
-                "description": item[2],
-                "price": item[3],
-                "quantity": item[4],
-                "created_at": item[5],
-                "category_id": item[6],
-            }
-            list_products.append(items)
+            if category is not None:
+                items = {
+                    "id": item[0],
+                    "name": item[1],
+                    "description": item[2],
+                    "price": item[3],
+                    "quantity": item[4],
+                    "created_at": item[5],
+                    "category":item[8],
+                    "category_id": item[6],
+                }
+                list_products.append(items)
+            else:
+                items = {
+                    "id": item[0],
+                    "name": item[1],
+                    "description": item[2],
+                    "price": item[3],
+                    "quantity": item[4],
+                    "created_at": item[5],
+                    "category_id": item[6],
+                }
+                list_products.append(items)
 
         return list_products
     except Exception as e:
+        conn.rollback()
         raise e
     finally:
         cur.close()
@@ -42,10 +87,10 @@ def get_products_by_category(category_id):
             """
             SELECT id, name, description, price, quantity, created_at, category_id
             FROM products
-            where category_id=%s
+            where category_id=%(category_id)s
             order by id asc 
         """,
-            (category_id,),
+            {"category_id":category_id}
         )
         result_set = cur.fetchall()
         products = []
@@ -90,50 +135,6 @@ def get_products_by_id(id):
             "category_id": row[6],
         }
         return new_product
-    except Exception as e:
-        raise e
-    finally:
-        cur.close()
-
-
-def get_products_by_price_range(max_price, min_price):
-    cur = conn.cursor()
-    try:
-        where_condition = ""
-        values = None
-        if max_price is not None and min_price is not None:
-            where_condition = "price BETWEEN %(min_price)s AND %(max_price)s"
-            values = {'min_price': min_price, 'max_price': max_price}          
-        elif max_price is None:
-            where_condition = "price >= %(min_price)s"
-            values = {'min_price': min_price}
-        elif min_price is None:
-            where_condition = "price <= %(max_price)s"
-            values = {'max_price': max_price}
-
-        query = f"""
-                SELECT id, name, description, price, quantity, created_at, category_id
-                FROM products
-                WHERE {where_condition}
-                order by price asc;
-            """
-        print(query, values)
-        cur.execute(query, values)
-
-        result_set = cur.fetchall()
-        products = []
-        for row in result_set:
-            new_product = {
-                "id": row[0],
-                "name": row[1],
-                "description": row[2],
-                "price": row[3],
-                "quantity": row[4],
-                "created_at": row[5],
-                "category_id": row[6],
-            }
-            products.append(new_product)
-        return products
     except Exception as e:
         raise e
     finally:

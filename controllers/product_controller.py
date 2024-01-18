@@ -3,10 +3,14 @@ from models import *
 import time, os
 
 def get_all_products_controller():
-    limit = request.args.get("limit",5 )
-    page = request.args.get("page",1)
+    limit = int(request.args.get("limit",5))
+    page = int(request.args.get("page",1))
+    category = request.args.get("category")
     keyword = request.args.get("keyword")
-    return get_all_products(page=page,limit=limit,keyword=keyword)
+    max_price = request.args.get("max_price")
+    min_price = request.args.get("min_price")
+
+    return get_all_products(page=page,limit=limit,category=category,keyword=keyword,max_price=max_price,min_price=min_price)
 
 def get_products_by_category_controller(category_id):
     if get_products_by_category(category_id) is None:
@@ -22,22 +26,6 @@ def get_products_by_id_controller(id):
     product = get_products_by_id(id)
     product["images"]= images
     return product
-
-
-def get_products_by_price_range_controller():
-    max_price = request.args.get('max_price')
-    min_price = request.args.get('min_price')
-
-    if not max_price and not min_price:
-        return {"message": "salah satu dari max price atau min price harus diisi."}, 402
-
-    try:
-        max_price = int(max_price) if max_price else None
-        min_price = int(min_price) if min_price else None
-    except ValueError:
-        return {"message": "max price dan min price harus berupa angka yang valid."}, 402
-
-    return get_products_by_price_range(max_price, min_price)
     
 
 def add_product_controller():
@@ -205,8 +193,9 @@ def upload_image_controller():
     return {"message": "upload produk berhasil"}, 200
 
 
-
-def delete_image_by_id_controller(id):
+def delete_image_by_id_controller(product_id,id):
+    if get_products_by_id(product_id) is None:
+        return {"message": "ID produk tidak ditemukan"}, 404
     if all_product_images(id) is None:
         return {"message": "ID image tidak ditemukan"}, 404
     image = get_product_image_by_id(id)
@@ -215,8 +204,6 @@ def delete_image_by_id_controller(id):
             os.remove(image["image"])
     delete_image_by_id(id)
     return {"message": "image berhasil dihapus"}, 200
-
-   
 
 def delete_images_by_product_id_controller(product_id):
     if all_product_images(product_id) is None:
