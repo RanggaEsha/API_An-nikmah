@@ -1,10 +1,20 @@
 from db import conn
 
 
+def get_user_id(id):
+    cur = conn.cursor()
+    try:
+        cur.execute('SELECT * FROM users WHERE id = %s', (id,))
+        return cur.fetchone()
+    except Exception as e:
+        raise e
+    finally:
+        cur.close()
+
 def find_email_password(email: str, password: str):
     cur = conn.cursor()
     try:
-        cur.execute('SELECT first_name,last_name,email,password FROM users WHERE email = %s AND password = %s', (email, password))
+        cur.execute('SELECT id,first_name,last_name,email,password FROM users WHERE email = %s AND password = %s', (email, password))
         user = cur.fetchone()
         if user:
             return {"username" : "%s %s" % (user[0],user[1])}

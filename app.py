@@ -97,5 +97,16 @@ def update_category_by_id(id):
 def delete_category_by_id(id):
     return delete_category_controller(id)
 
+# CARTS
+@app.get('/carts/<int:user_id>')
+def get_user_carts(user_id):
+    return get_carts_user_controller(user_id)
+
+@app.post('/carts')
+def add_user_carts():
+    return add_carts_user_controller()
+
+
+
 if __name__==('__main__'):
    app.run(debug=True,port=5001,use_reloader=True,host="0.0.0.0")

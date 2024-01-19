@@ -12,7 +12,7 @@ def get_categories():
                 "name":category[1],
             }
             list_categories.append(item)
-        return list_categories        
+        return list_categories
     except Exception as e:
         raise e
     finally:

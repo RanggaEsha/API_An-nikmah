@@ -10,7 +10,8 @@ def get_all_products_controller():
     max_price = request.args.get("max_price")
     min_price = request.args.get("min_price")
 
-    return get_all_products(page=page,limit=limit,category=category,keyword=keyword,max_price=max_price,min_price=min_price)
+    data = get_all_products(page=page,limit=limit,category=category,keyword=keyword,max_price=max_price,min_price=min_price)
+    return data
 
 def get_products_by_category_controller(category_id):
     if get_products_by_category(category_id) is None:

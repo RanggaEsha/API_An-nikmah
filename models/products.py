@@ -2,7 +2,7 @@ from db import conn
 from datetime import datetime
 
 
-def get_all_products(page: int, limit: int, category: str, keyword: str = None, min_price:int=None, max_price:int=None):
+def get_all_products(page: int, limit: int, category: str, keyword: str, min_price:int, max_price:int):
     cur = conn.cursor()
     try:
         page = int(page)
@@ -11,27 +11,25 @@ def get_all_products(page: int, limit: int, category: str, keyword: str = None, 
         join = []
         where = []
         
-        if keyword is not None:
+        if keyword:
             where.append("p.name ilike %(keyword)s")
             values['keyword']= "%" + keyword + "%"
 
-        if category is not None:
+        if category:
             where.append("categories.name ilike %(category)s")
             join.append("JOIN categories on p.category_id = categories.id")
             values['category']= "%" + category + "%"
 
-        if max_price is not None and min_price is not None:
+        if max_price and min_price:
             where.append("price BETWEEN %(min_price)s AND %(max_price)s")
-            values['min_price']= "%" + min_price + "%"
-            values['max_price']= "%" + max_price + "%" 
-
-        elif max_price is None:
+            values['min_price']=  min_price 
+            values['max_price']= max_price 
+        elif min_price:
             where.append("price >= %(min_price)s")
-            values['min_price']=  min_price
-
-        elif min_price is None:
+            values['min_price']= min_price
+        elif max_price:
             where.append("price <= %(max_price)s")
-            values['max_price']=  max_price
+            values['max_price']= max_price
 
         if len(where) > 0:
             where = "WHERE " + " AND ".join(where)
@@ -42,10 +40,10 @@ def get_all_products(page: int, limit: int, category: str, keyword: str = None, 
         {' '.join(join)} {where}
         limit %(limit)s offset %(offset)s
         """
-        print(query)
         cur.execute(query, values)
         conn.commit()
         products = cur.fetchall()
+        print(products)
         list_products = []
         for item in products:
             if category is not None:
@@ -71,7 +69,7 @@ def get_all_products(page: int, limit: int, category: str, keyword: str = None, 
                     "category_id": item[6],
                 }
                 list_products.append(items)
-
+        print(query,values)
         return list_products
     except Exception as e:
         conn.rollback()
