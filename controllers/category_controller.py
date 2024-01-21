@@ -11,6 +11,8 @@ def get_category_controller(id):
 
 def add_category_controller():
     name = request.form.get('name')
+    if get_category_name(name):
+        return {'message':'Nama kategori sudah terdaftar'},404
     add_category(name)
     return {'message':'kategori berhasil ditambahkan'},200
 
@@ -18,8 +20,10 @@ def update_category_controller(id):
     name = request.form.get('name')
     if get_category(id) is None:
         return {'message':'ID kategori tidak ditemukan'},404
+    if get_category_name(name):
+        return {'message':'Nama kategori sudah terdaftar'},404
     update_category(id,name)
-    return {'message':'ID kategori berhasil diubah'},200
+    return {'message':'Kategori berhasil diubah'},200
 
 
 def delete_category_controller(id):

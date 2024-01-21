@@ -58,11 +58,11 @@ def delete(id):
 
 @app.get('/products/<int:product_id>/images')
 def product_images(product_id):
-    return all_product_images(product_id)
+    return all_product_images_controller(product_id)
 
-@app.post('/products/images')
-def upload_image():
-    return upload_image_controller()
+@app.post('/products/<int:product_id>/images')
+def upload_image(product_id):
+    return upload_image_controller(product_id)
 
 @app.delete('/products/<int:product_id>/images/<int:id>')
 def delete_image(product_id,id):
@@ -78,11 +78,11 @@ def delete_images(product_id):
 def get_all_categories():
     return get_categories_controller()
 
-@app.get('/category/<int:category_id>/products')
+@app.get('/categories/<int:category_id>/products')
 def products_by_category(category_id):
     return get_products_by_category_controller(category_id) 
 
-@app.get('/categories/<int:id>')
+@app.get('/categories/<int:id>')     
 def get_category_by_id(id):
     return get_category_controller(id)
 

@@ -103,7 +103,7 @@ def get_products_by_category(category_id):
                     "created_at": row[5],
                     "category_id": row[6],
                 }
-            products.append(new_products)
+                products.append(new_products)
             return products
         else:
             return None
@@ -120,7 +120,7 @@ def get_products_by_id(id):
             """
             SELECT id,name,description,price,quantity,created_at,category_id
             FROM products
-            where id=%s
+            where i      
             order by id asc 
         """,
             (id,),
@@ -234,19 +234,22 @@ def delete_product(product_id):
 # PRODUCT IMAGES MODELS
 
 
-def all_product_images(product_id):
+def get_all_product_images(product_id):
     cur = conn.cursor()
     try:
         cur.execute(
-            "SELECT image FROM product_images where product_id = %s", (product_id,)
+            "SELECT id,image FROM product_images where product_id = %s", (product_id,)
         )
         images = cur.fetchall()
 
         list_images = []
-        for image in images:
-            item = {"image": image[0]}
-            list_images.append(item)
-        return list_images
+        if images:
+            for image in images:
+                item = {"id":image[0],"image": image[1]}
+                list_images.append(item)
+            return list_images
+        else:
+            return None
 
     except Exception as e:
         raise e

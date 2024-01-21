@@ -29,7 +29,24 @@ def get_category(id):
                 "category_id":category[0],
                 "name":category[1],
             }
-        return item           
+            return item           
+    except Exception as e:
+        raise e
+    finally:
+        cur.close()
+
+def get_category_name(name):
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT id AS category_id,name,slug FROM categories where name = %s",(name,))
+        category = cur.fetchone()
+
+        if category:
+            item = {
+                "category_id":category[0],
+                "name":category[1],
+            }
+            return item           
     except Exception as e:
         raise e
     finally:
