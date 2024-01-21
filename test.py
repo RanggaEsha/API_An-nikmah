@@ -27,7 +27,7 @@ print(query)
 # where_and = " AND ".join(where)
 # print(where_and)
 # if len(where) > 0:
-#     where_and = " WHERE " + where_and
+#     where_and = " WHERE " + where_andasd
 
 # query = f"""
 

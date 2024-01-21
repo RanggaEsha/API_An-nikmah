@@ -91,19 +91,22 @@ def get_products_by_category(category_id):
             {"category_id":category_id}
         )
         result_set = cur.fetchall()
-        products = []
-        for row in result_set:
-            new_products = {
-                "id": row[0],
-                "name": row[1],
-                "description": row[2],
-                "price": row[3],
-                "quantity": row[4],
-                "created_at": row[5],
-                "category_id": row[6],
-            }
+        if result_set is not None:
+            products = []
+            for row in result_set:
+                new_products = {
+                    "id": row[0],
+                    "name": row[1],
+                    "description": row[2],
+                    "price": row[3],
+                    "quantity": row[4],
+                    "created_at": row[5],
+                    "category_id": row[6],
+                }
             products.append(new_products)
-        return products
+            return products
+        else:
+            return None
     except Exception as e:
         raise e
     finally:
@@ -123,16 +126,19 @@ def get_products_by_id(id):
             (id,),
         )
         row = cur.fetchone()
-        new_product = {
-            "id": row[0],
-            "name": row[1],
-            "description": row[2],
-            "price": row[3],
-            "quantity": row[4],
-            "created_at": row[5],
-            "category_id": row[6],
-        }
-        return new_product
+        if row is not None:
+            new_product = {
+                "id": row[0],
+                "name": row[1],
+                "description": row[2],
+                "price": row[3],
+                "quantity": row[4],
+                "created_at": row[5],
+                "category_id": row[6],
+            }
+            return new_product
+        else:
+            return None
     except Exception as e:
         raise e
     finally:
@@ -190,6 +196,28 @@ def update_product(product_id, name, description, price, quantity, category_id):
 
     return "File updated successfully"
 
+def update_product_quantity(product_id,quantity):
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            """
+            UPDATE products 
+            SET quantity=%s
+            WHERE id=%s
+        """,
+            (            
+                quantity,
+                product_id,
+            ),
+        )
+        conn.commit()
+
+    except Exception as e:
+        conn.rollback()
+        raise e
+
+    finally:
+        cur.close()
 
 def delete_product(product_id):
     cur = conn.cursor()

@@ -17,7 +17,7 @@ def find_email_password(email: str, password: str):
         cur.execute('SELECT id,first_name,last_name,email,password FROM users WHERE email = %s AND password = %s', (email, password))
         user = cur.fetchone()
         if user:
-            return {"username" : "%s %s" % (user[0],user[1])}
+            return [{"id":user[0]},{"username":user[1]+" "+user[2]}]
     finally:
         cur.close()
     return None

@@ -13,6 +13,7 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 app.config["JWT_SECRET_KEY"] = "bacotttttttt"
+
 jwt = JWTManager(app)
 
 # LOGIN AND REGISTER
@@ -98,13 +99,57 @@ def delete_category_by_id(id):
     return delete_category_controller(id)
 
 # CARTS
-@app.get('/carts/<int:user_id>')
-def get_user_carts(user_id):
-    return get_carts_user_controller(user_id)
+@app.get('/carts')
+@jwt_required()
+def get_user_carts():
+    return get_carts_user_controller()
 
 @app.post('/carts')
+@jwt_required()
 def add_user_carts():
     return add_carts_user_controller()
+
+@app.delete('/carts')
+@jwt_required()
+def delete_user_carts():
+    return delete_cart_by_user_id_controller()
+
+@app.delete('/carts/<int:product_id>')
+@jwt_required()
+def delete_one_user_cart(product_id):
+    return delete_cart_by_user_id_and_product_id_controller(product_id)
+
+# TRANSACTIONS
+
+@app.get('/transactions')
+@jwt_required()
+def get_user_transactions():
+    return get_all_user_transactions_controller()
+
+@app.post('/transactions')
+@jwt_required()
+def add_user_transactions():
+    return add_user_transactions_controller()
+
+@app.post('/transactions/carts')
+@jwt_required()
+def add_user_transaction_from_carts():
+    return add_transaction_from_carts_controller()
+
+@app.delete('/transactions')
+@jwt_required()
+def delete_user_transaction():
+    return delete_user_transaction_controller()
+
+# TRANSACTION DETAILS
+
+@app.get('/transactions/<int:transaction_id>/details')
+def get_details_by_transaction_id(transaction_id):
+    return get_transaction_details_by_transaction_id_controller(transaction_id)
+
+@app.post('/transactions/<int:transaction_id>/details')
+def add_transaction_detail(transaction_id):
+    return add_transaction_details_contoller(transaction_id)
 
 
 
