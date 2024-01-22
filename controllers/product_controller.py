@@ -1,6 +1,8 @@
 from flask import request 
 from models import *
 import time, os
+from flask_jwt_extended import (get_jwt_identity)
+
 
 def get_all_products_controller():
     limit = int(request.args.get("limit",5))
@@ -32,22 +34,19 @@ def get_products_by_id_controller(id):
         return {"message":"ID produk harus diisi."},404
     if get_products_by_id(id) is None:
         return {"message":"ID produk tidak ditemukan."},404
-    # images = get_all_product_images(id)
     product = get_products_by_id(id)
     return product
-    # product["images"]= images
-    # if product is None:
-    #     return {"message":"Product tidak ditemukan."},404
-    # return product
-    
 
 def add_product_controller():
+    current_user = get_jwt_identity()
+    print(current_user)
+    if current_user['role'] != 'admin':
+            return {'message':'Unauthorized'}, 403
     if "file" not in request.files:
         return "no file part"
     files = request.files.getlist("file")
     if not files:
         return "No selected files"
-
     allowed_files = ["image/jpeg", "image/jpg", "image/webp", "image/png"]
     for file in files:
         if file.content_type not in allowed_files:
@@ -87,6 +86,10 @@ def add_product_controller():
     return {"message": "upload produk berhasil"},200
 
 def update_product_controller(product_id):
+    current_user = get_jwt_identity()
+    print(current_user)
+    if current_user['role'] != 'admin':
+            return {'message':'Unauthorized'}, 403
     if get_products_by_id(product_id) is None:
         return {"message": "ID produk tidak ditemukan"},404
     name = request.form.get("name")
@@ -149,6 +152,10 @@ def update_product_controller(product_id):
 
 
 def delete_product_controller(product_id: int):
+    current_user = get_jwt_identity()
+    print(current_user)
+    if current_user['role'] != 'admin':
+            return {'message':'Unauthorized'}, 403
     if get_products_by_id(product_id): 
         images = get_all_product_images(product_id=product_id)
         delete_product(product_id)
@@ -170,6 +177,10 @@ def all_product_images_controller(product_id):
 
 
 def upload_image_controller(product_id):
+    current_user = get_jwt_identity()
+    print(current_user)
+    if current_user['role'] != 'admin':
+            return {'message':'Unauthorized'}, 403
     if "file" not in request.files:
         return "no file part"
 
@@ -208,6 +219,10 @@ def upload_image_controller(product_id):
 
 
 def delete_image_by_id_controller(product_id,id):
+    current_user = get_jwt_identity()
+    print(current_user)
+    if current_user['role'] != 'admin':
+            return {'message':'Unauthorized'}, 403
     if get_products_by_id(product_id) is None:
         return {"message": "ID produk tidak ditemukan"}, 404
     if get_all_product_images(id) is None:
@@ -220,6 +235,10 @@ def delete_image_by_id_controller(product_id,id):
     return {"message": "image berhasil dihapus"}, 200
 
 def delete_images_by_product_id_controller(product_id):
+    current_user = get_jwt_identity()
+    print(current_user)
+    if current_user['role'] != 'admin':
+            return {'message':'Unauthorized'}, 403
     if get_all_product_images(product_id) is None:
         return {"message": "Product ID image tidak ditemukan"}, 404
     images = get_all_product_images(product_id=product_id)

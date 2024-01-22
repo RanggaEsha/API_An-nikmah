@@ -1,5 +1,7 @@
 from flask import request 
 from models import *
+from flask_jwt_extended import (get_jwt_identity)
+
 
 def get_categories_controller():
     return get_categories()
@@ -10,6 +12,10 @@ def get_category_controller(id):
     return get_category(id)
 
 def add_category_controller():
+    current_user = get_jwt_identity()
+    print(current_user)
+    if current_user['role'] != 'admin':
+            return {'message':'Unauthorized'}, 403
     name = request.form.get('name')
     if get_category_name(name):
         return {'message':'Nama kategori sudah terdaftar'},404
@@ -17,6 +23,10 @@ def add_category_controller():
     return {'message':'kategori berhasil ditambahkan'},200
 
 def update_category_controller(id):
+    current_user = get_jwt_identity()
+    print(current_user)
+    if current_user['role'] != 'admin':
+            return {'message':'Unauthorized'}, 403
     name = request.form.get('name')
     if get_category(id) is None:
         return {'message':'ID kategori tidak ditemukan'},404
@@ -27,6 +37,10 @@ def update_category_controller(id):
 
 
 def delete_category_controller(id):
+    current_user = get_jwt_identity()
+    print(current_user)
+    if current_user['role'] != 'admin':
+            return {'message':'Unauthorized'}, 403
     if get_category(id):
         delete_category(id)
         return {'message':'kategori berhasil dihapus'},200

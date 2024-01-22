@@ -24,8 +24,8 @@ def get_all_products():
     return protected_controller()
 
 @app.post('/login')
-def login_process():
-    return login_controller()
+def get_email_password():
+    return get_email_password_controller()
 
 @app.post('/register')
 def register():
@@ -42,15 +42,18 @@ def products_by_id(id):
     return get_products_by_id_controller(id) 
 
 @app.post('/products')
+@jwt_required()
 def upload():
     return add_product_controller()
 
 @app.put('/products/<int:id>')
+@jwt_required()
 def update(id):
     return update_product_controller(id)
 
 
 @app.delete('/products/<int:id>')
+@jwt_required()
 def delete(id):
     return delete_product_controller(id)
 
@@ -61,14 +64,17 @@ def product_images(product_id):
     return all_product_images_controller(product_id)
 
 @app.post('/products/<int:product_id>/images')
+@jwt_required()
 def upload_image(product_id):
     return upload_image_controller(product_id)
 
 @app.delete('/products/<int:product_id>/images/<int:id>')
+@jwt_required()
 def delete_image(product_id,id):
    return delete_image_by_id_controller(product_id,id)
 
 @app.delete('/products/<int:product_id>/images')
+@jwt_required()
 def delete_images(product_id):
     return delete_images_by_product_id_controller(product_id)
 
@@ -87,14 +93,17 @@ def get_category_by_id(id):
     return get_category_controller(id)
 
 @app.post('/categories')
+@jwt_required()
 def add_category():
     return add_category_controller()
 
 @app.put('/categories/<int:id>')
+@jwt_required()
 def update_category_by_id(id):
     return update_category_controller(id)
 
 @app.delete('/categories/<int:id>')
+@jwt_required()
 def delete_category_by_id(id):
     return delete_category_controller(id)
 

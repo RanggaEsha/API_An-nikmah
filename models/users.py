@@ -1,6 +1,5 @@
 from db import conn
 
-
 def get_user_id(id):
     cur = conn.cursor()
     try:
@@ -14,23 +13,18 @@ def get_user_id(id):
 def find_email_password(email: str, password: str):
     cur = conn.cursor()
     try:
-        cur.execute('SELECT id,first_name,last_name,email,password FROM users WHERE email = %s AND password = %s', (email, password))
+        cur.execute('SELECT id,first_name,last_name,email,password,role FROM users WHERE email = %s AND password = %s', (email, password))
         user = cur.fetchone()
         if user:
-            return [{"id":user[0]},{"username":user[1]+" "+user[2]}]
+            return [{"id":user[0]},{"username":user[1]+" "+user[2]},{"role":user[5]}]
     finally:
         cur.close()
     return None
 
-def add_user_data(request):
-    first_name = request.form.get('first_name')
-    last_name = request.form.get('last_name')
-    email = request.form.get('email')
-    password = request.form.get('password')
-
+def add_user_data(first_name,last_name,email,password,role):
     cur = conn.cursor()
     try:
-        cur.execute('INSERT INTO users (first_name,last_name,email,password) VALUES (%s,%s,%s,%s)',(first_name,last_name,email,password))
+        cur.execute('INSERT INTO users (first_name,last_name,email,password,role) VALUES (%s,%s,%s,%s,%s)',(first_name,last_name,email,password,role))
         conn.commit()
     except Exception as e:
         conn.rollback()

@@ -28,7 +28,8 @@ def add_user_transactions_controller():
                 quantity = int(quantities[i])
                 products = get_products_by_id(product_id)
                 if int(products["quantity"]) < quantity:
-                    return {"message": f"Stok {products['name']} tesisa {products['quantity']} barang"}, 404
+                    delete_transaction_by_id(transaction)
+                    return {"message": f"Stok dari {products['name']} hanya tesisa {products['quantity']} barang"}, 404
                 total = products["price"] * quantity
                 add_transaction_details(transaction, product_id, quantity, total)
                 updated_quantity = products['quantity'] - quantity
@@ -54,7 +55,7 @@ def add_transaction_from_carts_controller():
             products = get_products_by_id(product)
             if int(products["quantity"]) < quantity:
                 delete_transaction_by_id(transaction)
-                return {"message":"stok produk sisa %s" % products["quantity"]},404
+                return {"message": f"Stok dari {products['name']} hanya tesisa {products['quantity']} barang"}, 404
             total = products["price"] * quantity
             add_transaction_details(transaction, product, quantity, total)
             updated_quantity = products['quantity'] - quantity
