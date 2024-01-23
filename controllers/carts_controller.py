@@ -9,31 +9,45 @@ def get_carts_user_controller():
         return {"message": "Keranjang belanja anda masih kosong"}, 404
     return get_carts_by_user_id(user_id)
 
+
 def add_carts_user_controller():
-    user_id = get_jwt_identity()["id"]
-    product_id = int(request.form.get("product_id"))
-    quantity = request.form.get("quantity")
-    if get_products_by_id(product_id) is None:
-        return {"message": "ID produk tidak ditemukan"},404
-    
-    if get_carts_by_user_id_and_product_id(user_id,product_id) is None:
-        add_carts(user_id, product_id, quantity)
-        result = {"message": "berhasil ditambahkan"},200
-        return result
-    
-    else:
-        update_cart(product_id, user_id, quantity)
-        result = {"message": "quantity berhasil diubah"},200
-        return result
-    
+    try:
+        user_id = get_jwt_identity()["id"]
+        product_id = int(request.form.get("product_id"))
+        quantity = request.form.get("quantity")
+        if get_product_by_id(product_id) is None:
+            return {"message": "ID produk tidak ditemukan"}, 404
+
+        if get_carts_by_user_id_and_product_id(user_id, product_id) is None:
+            add_carts(user_id, product_id, quantity)
+            result = {"message": "berhasil ditambahkan"}, 200
+            return result
+
+        else:
+            update_cart(product_id, user_id, quantity)
+            result = {"message": "quantity berhasil diubah"}, 200
+            return result
+    except ValueError as ve:
+        return {"message": str(ve)},422
+    except Exception as e:
+        return {"message": str(e)},422
+
 def delete_cart_by_user_id_controller():
-    user_id = get_jwt_identity()["id"]
-    delete_cart_by_user_id(user_id)
-    return {"message": "berhasil menghapus semua keranjang anda"}
+    try:
+        user_id = get_jwt_identity()["id"]
+        delete_cart_by_user_id(user_id)
+        return {"message": "berhasil menghapus semua keranjang anda"}
+    except ValueError as ve:
+        return {"message": str(ve)},422
+    except Exception as e:
+        return {"message": str(e)},422
 
 def delete_cart_by_user_id_and_product_id_controller(product_id):
-    user_id = get_jwt_identity()["id"]
-    delete_cart_by_user_id_and_product_id(user_id,product_id)
-    return {"message": "berhasil menghapus keranjang"}
-
-
+    try:
+        user_id = get_jwt_identity()["id"]
+        delete_cart_by_user_id_and_product_id(user_id, product_id)
+        return {"message": "berhasil menghapus keranjang"}
+    except ValueError as ve:
+        return {"message": str(ve)},422
+    except Exception as e:
+        return {"message": str(e)},422
