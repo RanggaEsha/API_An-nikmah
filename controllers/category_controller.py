@@ -1,6 +1,7 @@
 from flask import request 
 from models import *
 from flask_jwt_extended import (get_jwt_identity)
+from errors import *
 
 
 def get_categories_controller():
@@ -22,10 +23,14 @@ def get_category_controller(id: int):
     Returns:
     - dict or None: A dictionary containing category information including category ID and name if the category is found, or an error message with a 404 status code if the category ID is not found.
     """
-    if get_category(id) is None:
-        return {'message':'ID kategori tidak ditemukan'},404
-    return get_category(id)
-
+    try:
+        if get_category(id) is None:
+            raise ValueError('ID kategori tidak ditemukan')
+        return get_category(id)
+    except ValueError as e:
+         return {"message": str(e)},422
+    except Exception as e:
+         raise {"message":"inputan anda salah"}
 def add_category_controller():
     """
     Controller function to add a new category.
@@ -37,16 +42,18 @@ def add_category_controller():
         current_user = get_jwt_identity()
         print(current_user)
         if current_user['role'] != 'admin':
-                return {'message':'Unauthorized'}, 401
+            raise Unauthorized('Unauthorized')
         name = request.form.get('name')
         if get_category_name(name):
-            return {'message':'Nama kategori sudah terdaftar'},404
+            raise DatabaseError('Nama kategori sudah terdaftar')
         add_category(name)
         return {'message':'kategori berhasil ditambahkan'},200
-    except ValueError as ve:
+    except DatabaseError as e:
+        return {"message": str(e)},404
+    except Unauthorized as ve:
         return {"message": str(ve)},422
     except Exception as e:
-        return {"message": str(e)},422
+        return e
 
 def update_category_controller(id: int):
     """
@@ -62,15 +69,17 @@ def update_category_controller(id: int):
         current_user = get_jwt_identity()
         print(current_user)
         if current_user['role'] != 'admin':
-                return {'message':'Unauthorized'}, 401
+                raise Unauthorized('Unauthorized')
         name = request.form.get('name')
         if get_category(id) is None:
-            return {'message':'ID kategori tidak ditemukan'},404
+            raise DatabaseError('ID kategori tidak ditemukan')
         if get_category_name(name):
-            return {'message':'Nama kategori sudah terdaftar'},404
+            raise DatabaseError('Nama kategori sudah terdaftar')
         update_category(id,name)
         return {'message':'Kategori berhasil diubah'},200
-    except ValueError as ve:
+    except DatabaseError as e:
+        return {"message": str(e)},404
+    except Unauthorized as ve:
         return {"message": str(ve)},422
     except Exception as e:
         return {"message": str(e)},422
@@ -89,12 +98,14 @@ def delete_category_controller(id):
         current_user = get_jwt_identity()
         print(current_user)
         if current_user['role'] != 'admin':
-                return {'message':'Unauthorized'}, 401
+                raise Unauthorized('Unauthorized')
         if get_category(id):
             delete_category(id)
             return {'message':'kategori berhasil dihapus'},200
-        return {"message": "ID kategori tidak ditemukan"},404
-    except ValueError as ve:
+        raise DatabaseError("ID kategori tidak ditemukan")
+    except Unauthorized as ve:
         return {"message": str(ve)},422
+    except DatabaseError as e:
+        return {"message": str(e)},404
     except Exception as e:
         return {"message": str(e)},422

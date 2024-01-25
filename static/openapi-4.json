@@ -53,6 +53,135 @@
         }
       }
     },
+
+    "/admin": {
+      "get": {
+        "summary": "get admin admin",
+        "tags": [
+          "Admin"
+        ],
+        "description": "get admin admin",
+        "security": [
+          {
+            "bearerToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "NOT FOUND"
+          }
+        }
+      },
+      "put": {
+        "summary": "update data admin",
+        "tags": [
+          "Admin"
+        ],
+        "description": "update data admin",
+        "security": [
+          {
+            "bearerToken": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "first_name": {
+                    "type": "string"
+                  },
+                  "last_name": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "NOT FOUND"
+          }
+        }
+      },
+      "delete": {
+        "summary": "delete admin",
+        "tags": [
+          "Admin"
+        ],
+        "description": "to check the authorization",
+        "security": [
+          {
+            "bearerToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "NOT FOUND"
+          }
+        }
+      }
+    },
+    "/admin/register": {
+      "post": {
+        "summary": "register admin",
+        "tags": [
+          "Admin"
+        ],
+        "description": "register admin",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "first_name": {
+                    "type": "string"
+                  },
+                  "last_name": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "NOT FOUND"
+          }
+        }
+      }
+    },
     "/register": {
       "post": {
         "summary": "register",
@@ -93,6 +222,94 @@
         }
       }
     },
+    "/users": {
+      "get": {
+        "summary": "get user data",
+        "tags": [
+          "Users"
+        ],
+        "description": "get user data",
+        "security": [
+          {
+            "bearerToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "NOT FOUND"
+          }
+        }
+      },
+      "put": {
+        "summary": "update data user",
+        "tags": [
+          "Users"
+        ],
+        "description": "update data user",
+        "security": [
+          {
+            "bearerToken": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "first_name": {
+                    "type": "string"
+                  },
+                  "last_name": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "NOT FOUND"
+          }
+        }
+      },
+      "delete": {
+        "summary": "protected",
+        "tags": [
+          "Users"
+        ],
+        "description": "to check the authorization",
+        "security": [
+          {
+            "bearerToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "NOT FOUND"
+          }
+        }
+      }
+    },
     "/protected": {
       "get": {
         "summary": "protected",
@@ -108,6 +325,9 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
           },
           "404": {
             "description": "NOT FOUND"
@@ -166,6 +386,20 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -211,6 +445,7 @@
                   },
                   "file": {
                     "type": "array",
+                    "format": "multipart",
                     "items": {
                       "type": "string",
                       "format": "binary"
@@ -224,6 +459,9 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
           },
           "404": {
             "description": "Not Found"
@@ -308,6 +546,9 @@
           "200": {
             "description": "OK"
           },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
           "404": {
             "description": "Not Found"
           }
@@ -338,8 +579,11 @@
           "200": {
             "description": "OK"
           },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
           "404": {
-            "description": "Not Found"
+            "description": "NOT FOUND"
           }
         }
       }
@@ -399,6 +643,7 @@
                 "properties": {
                   "file": {
                     "type": "array",
+                    "format": "multipart",
                     "items": {
                       "type": "string",
                       "format": "binary"
@@ -413,8 +658,11 @@
           "200": {
             "description": "OK"
           },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
           "404": {
-            "description": "Not Found"
+            "description": "NOT FOUND"
           }
         }
       },
@@ -443,8 +691,11 @@
           "200": {
             "description": "OK"
           },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
           "404": {
-            "description": "Not Found"
+            "description": "NOT FOUND"
           }
         }
       }
@@ -529,8 +780,11 @@
           "200": {
             "description": "OK"
           },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
           "404": {
-            "description": "Not Found"
+            "description": "NOT FOUND"
           }
         }
       }
@@ -600,8 +854,11 @@
           "200": {
             "description": "OK"
           },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
           "404": {
-            "description": "Not Found"
+            "description": "NOT FOUND"
           }
         }
       },
@@ -629,6 +886,9 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
           },
           "404": {
             "description": "NOT FOUND"
@@ -821,16 +1081,18 @@
                   "phone_number": {
                     "type": "integer"
                   },
-                  "product_ids:": {
+                  "product_ids": {
                     "type": "array",
+                    "format": "multipart",
                     "items": {
-                      "type": "string"
+                      "type": "integer"
                     }
                   },
-                  "quantities:": {
+                  "quantities": {
                     "type": "array",
+                    "format": "multipart",
                     "items": {
-                      "type": "string"
+                      "type": "integer"
                     }
                   }
                 }
@@ -868,7 +1130,7 @@
         }
       }
     },
-    "/categories/carts": {
+    "/transactions/carts": {
       "post": {
         "summary": "Add transactions from carts",
         "tags": [
@@ -895,10 +1157,11 @@
                   "phone_number": {
                     "type": "integer"
                   },
-                  "cart_ids:": {
+                  "cart_ids": {
                     "type": "array",
+                    "format": "multipart",
                     "items": {
-                      "type": "string"
+                      "type": "integer"
                     }
                   }
                 }
@@ -916,7 +1179,7 @@
         }
       }
     },
-    "/categories/{id}/details": {
+    "/transactions/{id}/details": {
       "get": {
         "summary": "get transactions details by id",
         "tags": [

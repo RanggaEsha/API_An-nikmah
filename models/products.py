@@ -3,7 +3,7 @@ from datetime import datetime
 
 
 def get_all_products(
-    page: int, limit: int, category: str, keyword: str, min_price: int, max_price: int
+    page: int, limit: int, category: str, keyword: str, min_price: int, max_price: int, order_by:str,sort: str
 ):
     """
     Retrieve a list of products based on specified parameters.
@@ -45,6 +45,7 @@ def get_all_products(
         values = {"limit": limit, "offset": page}
         join = []
         where = []
+        
 
         if keyword:
             where.append("p.name ilike %(keyword)s")
@@ -63,20 +64,28 @@ def get_all_products(
         elif max_price:
             where.append("price <= %(max_price)s")
             values["max_price"] = max_price
-
+        
         if len(where) > 0:
             where = "WHERE " + " AND ".join(where)
         else:
             where = ""
+        if len(order_by) > 0:
+            order = f"ORDER BY {order_by}"
+        if sort:
+            sorting = sort
+        else:
+            sort = ''
         query = f"""
         SELECT * FROM products p 
         {' '.join(join)} {where}
+        {order} {sorting}
         limit %(limit)s offset %(offset)s
         """
+        print(query,values)
         cur.execute(query, values)
+        
         conn.commit()
         products = cur.fetchall()
-        print(products)
         list_products = []
         for item in products:
             if category is not None:

@@ -59,6 +59,22 @@ paths:
           description: OK
         "404":
           description: NOT FOUND
+  /users:
+    delete:
+      summary: protected
+      tags:
+      - "Authentication"
+      description: to check the authorization
+      security:
+        - bearerToken: []
+      responses:
+        "200":
+          description: OK
+        "404":
+          description: NOT FOUND
+        "401":
+          description: UNAUTHORIZED
+
   /protected:
     get:
       summary: protected

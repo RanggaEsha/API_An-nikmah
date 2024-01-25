@@ -13,7 +13,7 @@ jwt = JWTManager(app)
 CORS(app)
 app.config["JWT_SECRET_KEY"] = "bacotttttttt"
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
-API_URL = "/static/openapi-2.json"  # Our API url (can of course be a local resource)
+API_URL = "/static/openapi-4.json"  # Our API url (can of course be a local resource)
 swaggerui_blueprint = get_swaggerui_blueprint(
     SWAGGER_URL,  # Swagger UI static files will be mapped to '{SWAGGER_URL}/dist/'
     API_URL,
@@ -21,14 +21,11 @@ swaggerui_blueprint = get_swaggerui_blueprint(
 )
 app.register_blueprint(swaggerui_blueprint)
 
-
 # LOGIN AND REGISTER
-
 
 @app.get("/protected")
 @jwt_required()
 def get_all_products():
-    
     return protected_controller()
 
 
@@ -36,10 +33,47 @@ def get_all_products():
 def get_email_password():
     return get_email_password_controller()
 
+# USER
 
 @app.post("/register")
 def register():
     return register_controller()
+
+@app.get("/users")
+@jwt_required()
+def get_all_user_data():
+    return get_user_data_controller()
+
+@app.put("/users")
+@jwt_required()
+def update_data_user_id():
+    return update_data_user_controller()
+
+@app.delete("/users")
+@jwt_required()
+def delete_user_id():
+    return delete_user_controller()
+
+#   ADMIN
+
+@app.post("/admin/register")
+def register_admin():
+    return register_admin_controller()
+
+@app.get('/admin')
+@jwt_required()
+def get_admin_data():
+    return get_admin_data_controller()
+
+@app.put("/admin")
+@jwt_required()
+def update_data_admin_id():
+    return update_data_admin_controller()
+
+@app.delete("/admin")
+@jwt_required()
+def delete_admin_id():
+    return delete_admin_controller()
 
 
 # PRODUCTS
