@@ -3,7 +3,7 @@ from datetime import datetime
 
 
 def get_all_products(
-    page: int, limit: int, category: str, keyword: str, min_price: int, max_price: int, order_by:str,sort: str
+    page: int, limit: int, category: str, keyword: str, min_price: int, max_price: int, order_by:str,sort: str='asc'
 ):
     """
     Retrieve a list of products based on specified parameters.
@@ -45,8 +45,18 @@ def get_all_products(
         values = {"limit": limit, "offset": page}
         join = []
         where = []
-        
+        whitelist_orders = [
+        "id", "name"
+        ]
+        if order_by not in whitelist_orders:
+            raise ValueError("Value Order By tidak ada didalam whitelist, wihtelist yang tersedia: "+", ".join(whitelist_orders))
 
+        whitelist_sorts=[
+            "asc","desc"
+        ]
+        if sort not in whitelist_sorts:
+            raise ValueError("Value Order By tidak ada didalam whitelist")
+    
         if keyword:
             where.append("p.name ilike %(keyword)s")
             values["keyword"] = "%" + keyword + "%"
@@ -113,6 +123,8 @@ def get_all_products(
                 list_products.append(items)
         print(query, values)
         return list_products
+    except ValueError as e:
+        return {"message": str(e)}
     except Exception as e:
         conn.rollback()
         raise e

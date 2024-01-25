@@ -122,18 +122,11 @@ def update_data_admin_controller():
         admin = get_jwt_identity()
         admin_id = admin["id"]
         if admin['role'] != 'admin':
-            raise Exception("Unauthorized")
-        data = get_user_data(admin_id)
-        
-        first_name = request.form.get('first_name',data["first_name"])
-        last_name = request.form.get('last_name',data["last_name"])
-        password = request.form.get('password',data["password"])
+            raise Exception("Unauthorized")   
+        first_name = request.form.get('first_name')
+        last_name = request.form.get('last_name')
+        password = request.form.get('password')
         email = request.form.get('email')
-        if email:
-            if find_email(request):
-                raise ValueError('email sudah terdaftar')
-        else:
-            email = data['email']
         
         update_data_user(admin_id,first_name,last_name,email,password)
         return {'message': 'register berhasil'}, 200
