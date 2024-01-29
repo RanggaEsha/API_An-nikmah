@@ -56,17 +56,19 @@ def register_controller():
 def get_user_data_controller():
     try:
         user_id = get_jwt_identity()["id"]
-        get_user_data(user_id)
+        
+        return get_user_data(user_id)
     except Exception as e:
         return {"message": str(e)},422
 
 def update_data_user_controller():
     try:
+        user_id = get_jwt_identity()['id']
         first_name = request.form.get('first_name')
         last_name = request.form.get('last_name')
         email = request.form.get('email')
         password = request.form.get('password')
-        update_data_user(first_name,last_name,email,password)
+        update_data_user(user_id,first_name,last_name,email,password)
         return {'message': 'register berhasil'}, 200
     except ValueError as ve:
         return {"message": str(ve)},422

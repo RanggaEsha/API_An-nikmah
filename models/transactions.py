@@ -1,6 +1,54 @@
 from db import conn
 from datetime import datetime
 
+def get_all_transactions(limit: int=None, page:int =None,max_date: int=None,min_date: int=None):
+    cur = conn.cursor()
+    try:
+        page = int(page)
+        limit = int(limit)
+        page = (page - 1) * limit
+        values = {"limit": limit, "offset": page}
+        if max_date and min_date:
+            where.append("created_at BETWEEN %(min_date)s AND %(max_date)s")
+            values["min_date"] = min_date
+            values["max_date"] = max_date
+        elif min_date:
+            where.append("created_at >= %(min_date)s")
+            values["min_date"] = min_date
+        elif max_date:
+            where.append("created_at <= %(max_date)s")
+            values["max_date"] = max_date
+
+        if len(where) > 0:
+            where = "WHERE " + " AND ".join(where)
+        query = (f"""
+        SELECT * FROM transactions p
+        limit %(limit)s offset %(offset)s
+        """)
+        cur.execute(query,values)
+        list_data = []
+        data = cur.fetchall()
+        if not data and page >= cur.rowcount:
+            return {"data": []}
+        if data:
+            for item in data:
+                new_data = {
+                    "id": item[0],
+                    "user_id": item[1],
+                    "address": item[2],
+                    "fullname": item[3],
+                    "phone_number": item[4],
+                    "created_at": item[5],
+                }
+                list_data.append(new_data)
+            return list_data
+        else:
+            return None
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        cur.close()
 
 def get_transactions_by_id(id):
     cur = conn.cursor()
@@ -29,12 +77,28 @@ def get_transactions_by_id(id):
         cur.close()
 
 
-def get_transactions_by_user_id(user_id):
+def get_transactions_by_user_id(user_id,limit: int=None, page:int =None):
+
     cur = conn.cursor()
     try:
-        cur.execute("SELECT * FROM transactions WHERE user_id = %s", (user_id,))
-        data = cur.fetchall()
+        page = int(page)
+        limit = int(limit)
+        page = (page - 1) * limit
+        values = {"limit": limit, "offset": page}
+        if user_id:
+            where = "WHERE user_id = %(user_id)s"
+            values["user_id"] = user_id
+        else:
+            where = ""
+        query = (f"""
+        SELECT * FROM transactions p {where}
+        limit %(limit)s offset %(offset)s
+        """)
+        cur.execute(query,values)
         list_data = []
+        data = cur.fetchall()
+        if not data and page >= cur.rowcount:
+            return {"data": []}
         if data:
             for item in data:
                 new_data = {
@@ -61,7 +125,7 @@ def add_transaction(user_id, address, fullname, phone_number):
     try:
         cur.execute(
             "INSERT INTO transactions (user_id,address,fullname,phone_number,created_at) VALUES (%s,%s,%s,%s,%s) RETURNING id",
-            (user_id, address, fullname, phone_number, datetime.now()),
+            (user_id, address, fullname, phone_number, 'now()'),
         )
         return cur.fetchone()[0]
     except Exception as e:

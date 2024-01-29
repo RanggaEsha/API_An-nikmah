@@ -121,6 +121,10 @@ def upload_image(product_id):
     return upload_image_controller(product_id)
 
 
+@app.get("/products/<int:product_id>/images/<int:image_id>")
+def get_image(product_id, image_id):
+    return get_image_by_id_controller(product_id, image_id)
+
 @app.delete("/products/<int:product_id>/images/<int:image_id>")
 @jwt_required()
 def delete_image(product_id, image_id):
@@ -188,10 +192,10 @@ def delete_user_carts():
     return delete_cart_by_user_id_controller()
 
 
-@app.delete("/carts/<int:product_id>")
+@app.delete("/carts/<int:cart_id>")
 @jwt_required()
-def delete_one_user_cart(product_id):
-    return delete_cart_by_user_id_and_product_id_controller(product_id)
+def delete_one_user_cart(cart_id):
+    return delete_cart_by_cart_id_and_user_id_controller(cart_id)
 
 
 # TRANSACTIONS
@@ -207,14 +211,9 @@ def get_user_transactions():
 @jwt_required()
 def add_user_transactions():
     return add_user_transactions_controller()
+ 
 
-
-@app.post("/transactions/carts")
-@jwt_required()
-def add_user_transaction_from_carts():
-    return add_transaction_from_carts_controller()
-
-
+ 
 @app.delete("/transactions")
 @jwt_required()
 def delete_user_transaction():

@@ -53,7 +53,6 @@
         }
       }
     },
-
     "/admin": {
       "get": {
         "summary": "get admin admin",
@@ -425,6 +424,11 @@
         "requestBody": {
           "content": {
             "multipart/form-data": {
+              "encoding": {
+                "file":{
+                  "explode": true
+                }
+              },
               "schema": {
                 "type": "object",
                 "properties": {
@@ -445,7 +449,6 @@
                   },
                   "file": {
                     "type": "array",
-                    "format": "multipart",
                     "items": {
                       "type": "string",
                       "format": "binary"
@@ -638,12 +641,16 @@
         "requestBody": {
           "content": {
             "multipart/form-data": {
+              "encoding": {
+                "file":{
+                  "explode": true
+                }
+              },
               "schema": {
                 "type": "object",
                 "properties": {
                   "file": {
                     "type": "array",
-                    "format": "multipart",
                     "items": {
                       "type": "string",
                       "format": "binary"
@@ -728,6 +735,47 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "404": {
+            "description": "NOT FOUND"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Upload product images by product id",
+        "tags": [
+          "Product/images"
+        ],
+        "description": "Upload product images",
+        "security": [
+          {
+            "bearerToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "image_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
           },
           "404": {
             "description": "NOT FOUND"
@@ -935,6 +983,38 @@
           }
         ],
         "description": "get all products",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "example": 5
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          },
+          {
+            "name": "max_date",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "min_date",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -1004,7 +1084,7 @@
     },
     "/carts/{id}": {
       "delete": {
-        "summary": "Delete carts by user id",
+        "summary": "Delete carts by cart id",
         "tags": [
           "Carts"
         ],
@@ -1013,7 +1093,7 @@
             "bearerToken": []
           }
         ],
-        "description": "Delete carts by user id",
+        "description": "Delete carts by cart id",
         "parameters": [
           {
             "name": "id",
@@ -1046,6 +1126,24 @@
           }
         ],
         "description": "get all products",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "example": 5
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -1069,6 +1167,14 @@
         "requestBody": {
           "content": {
             "multipart/form-data": {
+              "encoding": {
+                "product_id":{
+                  "explode": true
+                },
+                "quantity":{
+                  "explode": true
+                }
+              },
               "schema": {
                 "type": "object",
                 "properties": {
@@ -1081,16 +1187,14 @@
                   "phone_number": {
                     "type": "integer"
                   },
-                  "product_ids": {
+                  "product_id": {
                     "type": "array",
-                    "format": "multipart",
                     "items": {
                       "type": "integer"
                     }
                   },
-                  "quantities": {
+                  "quantity": {
                     "type": "array",
-                    "format": "multipart",
                     "items": {
                       "type": "integer"
                     }
@@ -1110,7 +1214,7 @@
         }
       },
       "delete": {
-        "summary": "get transactions by user id",
+        "summary": "delete transactions by user id",
         "tags": [
           "Transactions"
         ],
@@ -1145,6 +1249,11 @@
         "requestBody": {
           "content": {
             "multipart/form-data": {
+              "encoding": {
+                "cart_ids":{
+                  "explode": true
+                }
+              },
               "schema": {
                 "type": "object",
                 "properties": {
@@ -1159,7 +1268,6 @@
                   },
                   "cart_ids": {
                     "type": "array",
-                    "format": "multipart",
                     "items": {
                       "type": "integer"
                     }

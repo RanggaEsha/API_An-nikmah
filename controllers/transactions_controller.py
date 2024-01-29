@@ -5,13 +5,19 @@ from errors import *
 
 
 def get_all_user_transactions_controller():
+    limit = request.args.get('limit',5)
+    page = request.args.get('page',1)
+    if get_jwt_identity()['role'] == 'admin':
+        return get_all_transactions(limit,page)
     user_id = get_jwt_identity()["id"]
-    if get_transactions_by_user_id(user_id) is None:
+    print("gwer",get_transactions_by_user_id(user_id,limit,page))
+    if get_transactions_by_user_id(user_id,limit,page) is None:
         return {"message": "transaksi anda masih kosong"}, 404
-    return get_transactions_by_user_id(user_id)
+    return get_transactions_by_user_id(user_id,limit,page)
 
 
 def add_user_transactions_controller():
+    cur = conn.cursor()
     try:
         user_id = get_jwt_identity()["id"]
         address = request.form.get("address")
@@ -23,7 +29,7 @@ def add_user_transactions_controller():
             return {"message": "isi data diri anda dengan benar"}, 404
         if not product_ids or not quantities:
             return {"message": "pastikan produk anda sesuai atau tidak kosong"}, 404
-        cur = conn.cursor()
+        
 
         # adding data to transactions
         transaction = add_transaction(user_id, address, fullname, phone_number)
@@ -33,22 +39,24 @@ def add_user_transactions_controller():
             quantity = int(quantities[i])
             products = get_product_by_id(product_id)
             if products is None:
-                return DatabaseError(f"Produk dengan ID {product_id} sedang kosong")
+                raise DatabaseError(f"Produk dengan ID {product_id} sedang kosong")
             if int(products["quantity"]) < quantity:
                 raise DatabaseError(f"Stok dari produk dengan ID {product_id} hanya tesisa {products['quantity']} barang")
             total = products["price"] * quantity
             add_transaction_details(transaction, product_id, quantity, total)
             updated_quantity = products["quantity"] - quantity
             update_product_quantity(product_id, updated_quantity)
+            
         conn.commit()
         return {"message": "berhasil ditambahkan"}, 200
     except DatabaseError as e:
+        conn.rollback()
         return {"message": str(e)},404
     except Exception as e:
         conn.rollback()
-        return {"message": str(e)}, 422
+        raise e
     finally:
-        cur.close()
+        cur.close() 
    
 
 
@@ -60,22 +68,16 @@ def add_transaction_from_carts_controller():
         fullname = request.form.get("fullname")
         phone_number = request.form.get("phone_number")
         cart_ids = request.form.getlist("cart_ids")
-        cart_ids = request.form.get("cart_ids")
-        # if cart_ids:
-        #     cart_ids = cart_ids.split(',')
         if not address or not fullname or not phone_number:
             raise ValueError("isi data diri anda dengan benar")
 
-        
         # adding data to transactions
         transaction = add_transaction(user_id, address, fullname, phone_number)
         # adding data to transaction details
         for cart_id in cart_ids:
-            print("ijsdbh", cart_ids)
-            cart = get_cart_by_id(cart_id)
+            cart = get_cart_by_cart_id_and_user_id(cart_id,user_id)
             if cart is None:
                 raise DatabaseError("Cart kosong")
-            print("avdbsjlk", cart["product_id"])
             product = get_product_by_id(cart["product_id"])
             quantity = int(cart["quantity"])
             if int(product["quantity"]) < quantity:
@@ -105,7 +107,7 @@ def add_transaction_from_carts_controller():
 def delete_user_transaction_controller():
     try:
         user_id = get_jwt_identity()["id"]
-        delete_transaction_by_id(user_id)
+        delete_transaction_by_user_id(user_id)
         return {"message": "berhasil dihapus"}, 200
     except Exception as e:
         conn.rollback()

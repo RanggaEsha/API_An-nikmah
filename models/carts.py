@@ -1,7 +1,57 @@
 from db import conn
 
+def get_all_carts(page: int,limit: int,max_date: int,min_date: int):
+    cur = conn.cursor()
+    try:
+        page = int(page)
+        limit = int(limit)
+        page = (page - 1) * limit
+        values = {"limit": limit, "offset": page}
+        where = []
+        if max_date and min_date:
+            where.append("created_at BETWEEN %(min_date)s AND %(max_date)s")
+            values["min_date"] = min_date
+            values["max_date"] = max_date
+        elif min_date:
+            where.append("created_at >= %(min_date)s")
+            values["min_date"] = min_date
+        elif max_date:
+            where.append("created_at <= %(max_date)s")
+            values["max_date"] = max_date
+        if len(where) > 0:
+            where = "WHERE " + " AND ".join(where)
+        else:
+            where = ""
+        values = {"limit": limit, "offset": page}
+        query = (f"""
+        SELECT * FROM carts {where}
+        limit %(limit)s offset %(offset)s
+        """)
+        cur.execute(query,values)
+        list_data = []
+        data = cur.fetchall()
+        if not data and page >= cur.rowcount:
+            return {"data": []}
+        if data is not None:
+            for item in data:
+                new_data = {
+                    "id": item[0],
+                    "user_id": item[1],
+                    "product_id": item[2],
+                    "quantity": item[3],
+                }
+                list_data.append(new_data)
+            return list_data
+        else:
+            return None
 
-def get_carts_by_user_id(user_id: int):
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        cur.close()
+
+def get_carts_by_user_id(user_id: int,page: int,limit: int,max_date: int,min_date: int):
     """
     Retrieve carts based on user ID.
 
@@ -20,12 +70,40 @@ def get_carts_by_user_id(user_id: int):
     """
     cur = conn.cursor()
     try:
-        cur.execute(
-            "SELECT id,user_id,product_id,quantity FROM carts WHERE user_id = %s",
-            (user_id,),
-        )
-        data = cur.fetchall()
+        page = int(page)
+        limit = int(limit)
+        page = (page - 1) * limit
+        where = []
+        values = {"limit": limit, "offset": page}
+        
+        if user_id:
+            where.append("user_id = %(user_id)s")
+            values["user_id"] = user_id
+
+        if max_date and min_date:
+            where.append("created_at BETWEEN %(min_date)s AND %(max_date)s")
+            values["min_date"] = min_date
+            values["max_date"] = max_date
+        elif min_date:
+            where.append("created_at >= %(min_date)s")
+            values["min_date"] = min_date
+        elif max_date:
+            where.append("created_at <= %(max_date)s")
+            values["max_date"] = max_date
+
+        if len(where) > 0:
+            where = "WHERE " + " AND ".join(where)
+
+        query = f"""
+        SELECT * FROM carts {where}
+        LIMIT %(limit)s OFFSET %(offset)s
+        """
+        print(query, values)
+        cur.execute(query, values)
         list_data = []
+        data = cur.fetchall()
+        if not data and page >= cur.rowcount:
+            return {"data": []}
         if data is not None:
             for item in data:
                 new_data = {
@@ -46,7 +124,7 @@ def get_carts_by_user_id(user_id: int):
         cur.close()
 
 
-def get_cart_by_id(id: int):
+def get_cart_by_cart_id_and_user_id(cart_id: int, user_id: int):
     """
     Retrieve carts based on cart ID.
 
@@ -66,7 +144,7 @@ def get_cart_by_id(id: int):
     cur = conn.cursor()
     try:
         cur.execute(
-            "SELECT id,user_id,product_id,quantity FROM carts WHERE id = %s", (id,)
+            "SELECT id,user_id,product_id,quantity FROM carts WHERE id = %s AND user_id = %s", (cart_id,user_id)
         )
         data = cur.fetchone()
         if data is not None:
@@ -183,12 +261,12 @@ def delete_cart_by_user_id(user_id):
         cur.close()
 
 
-def delete_cart_by_user_id_and_product_id(user_id, product_id):
+def delete_cart_by_user_id_and_cart_id(cart_id, user_id):
     cur = conn.cursor()
     try:
         cur.execute(
-            "DELETE FROM carts WHERE user_id = %s and product_id = %s",
-            (user_id, product_id),
+            "DELETE FROM carts WHERE id = %s and user_id = %s",
+            (cart_id,user_id),
         )
         conn.commit()
     except Exception as e:

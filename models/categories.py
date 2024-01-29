@@ -40,9 +40,8 @@ def get_category(id: int):
     """
     cur = conn.cursor()
     try:
-        cur.execute("SELECT id AS category_id,name,slug FROM categories where id = %s",(id,))
+        cur.execute("SELECT id AS category_id,name,slug FROM categories where id = %s ORDER BY category_id ASC",(id,))
         category = cur.fetchone()
-
         if category:
             item = {
                 "category_id":category[0],

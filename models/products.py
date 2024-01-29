@@ -46,17 +46,21 @@ def get_all_products(
         join = []
         where = []
         whitelist_orders = [
-        "id", "name"
+        "id", "name","price","category_id"
         ]
-        if order_by not in whitelist_orders:
-            raise ValueError("Value Order By tidak ada didalam whitelist, wihtelist yang tersedia: "+", ".join(whitelist_orders))
-
+        if order_by:
+            if order_by not in whitelist_orders:
+                raise ValueError("Value Order By tidak ada didalam whitelist, whitelist yang tersedia: "+", ".join(whitelist_orders))
+        else:
+            order_by = ''
         whitelist_sorts=[
             "asc","desc"
         ]
-        if sort not in whitelist_sorts:
-            raise ValueError("Value Order By tidak ada didalam whitelist")
-    
+        if sort:
+            if sort not in whitelist_sorts:
+                raise ValueError("Value Sort By tidak ada didalam whitelist, whitelist yang tersedia: "+", ".join(whitelist_sorts))
+        else:
+            sort = ''
         if keyword:
             where.append("p.name ilike %(keyword)s")
             values["keyword"] = "%" + keyword + "%"
@@ -79,16 +83,21 @@ def get_all_products(
             where = "WHERE " + " AND ".join(where)
         else:
             where = ""
-        if len(order_by) > 0:
+
+        if not order_by and sort:
+            raise ValueError("harus menginputkan juga order_by, wihtelist yang tersedia: "+", ".join(whitelist_orders))
+        if order_by:
             order = f"ORDER BY {order_by}"
-        if sort:
-            sorting = sort
+            if sort:
+                sort
+            else:
+                sort = ''
         else:
-            sort = ''
+            order =''
         query = f"""
         SELECT * FROM products p 
         {' '.join(join)} {where}
-        {order} {sorting}
+        {order} {sort}
         limit %(limit)s offset %(offset)s
         """
         print(query,values)
@@ -96,6 +105,8 @@ def get_all_products(
         
         conn.commit()
         products = cur.fetchall()
+        if not products and page >= cur.rowcount:
+            return {"data": []}
         list_products = []
         for item in products:
             if category is not None:
@@ -173,7 +184,7 @@ def get_products_by_category(category_id: int):
             {"category_id": category_id},
         )
         result_set = cur.fetchall()
-        if result_set is not None:
+        if result_set:
             products = []
             for row in result_set:
                 new_products = {
@@ -277,7 +288,7 @@ def upload_product(name, description, price, quantity, category_id):
             INSERT INTO products (name, description, price, quantity, created_at, category_id) 
             VALUES (%s, %s, %s, %s, %s, %s) RETURNING id
         """,
-            (name, description, price, quantity, datetime.now(), category_id),
+            (name, description, price, quantity, "now()", category_id),
         )
         conn.commit()
         return cur.fetchone()[0]
@@ -324,7 +335,7 @@ def update_product(product_id, name, description, price, quantity, category_id):
             ),
         )
         conn.commit()
-
+        return "File updated successfully"
     except Exception as e:
         conn.rollback()
         raise e
@@ -332,7 +343,7 @@ def update_product(product_id, name, description, price, quantity, category_id):
     finally:
         cur.close()
 
-    return "File updated successfully"
+    
 
 
 def update_product_quantity(product_id, quantity):
@@ -427,7 +438,7 @@ def get_all_product_images(product_id):
         cur.close()
 
 
-def get_product_image_by_id(id):
+def get_image_by_product_id_and_image_id(id,product_id):
     """
     Retrieve a product image based on its ID.
 
@@ -443,11 +454,13 @@ def get_product_image_by_id(id):
     """
     cur = conn.cursor()
     try:
-        cur.execute("SELECT * FROM product_images where id = %s", (id,))
+        cur.execute("SELECT * FROM product_images where id = %s AND product_id = %s", (id,product_id))
         image = cur.fetchone()
-        new_image = {"id": image[0], "image": image[1], "product_id": image[2]}
-        return new_image
-
+        if image:
+            new_image = {"id": image[0], "image": image[1], "product_id": image[2]}
+            return new_image
+        else:
+            return None
     except Exception as e:
         raise e
     finally:
@@ -480,7 +493,7 @@ def upload_product_images(image_location, product_id):
         cur.close()
 
 
-def delete_image_by_id(id):
+def delete_image_by_id(product_id,image_id):
     """
     Delete a product image from the database based on its ID.
 
@@ -492,7 +505,7 @@ def delete_image_by_id(id):
     """
     cur = conn.cursor()
     try:
-        cur.execute("DELETE from product_images where id = %s", (id,))
+        cur.execute("DELETE from product_images where id = %s AND product_id = %s", (image_id,product_id))
         conn.commit()
     except Exception as e:
         conn.rollback()

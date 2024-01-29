@@ -63,12 +63,17 @@ def get_products_by_category_controller(category_id: int):
       If products are found, the dictionary contains the "category" key with the category information and the "products" key with the list of products.
       If no products are found, the "products" key contains a If no products are found, the dictionary contains nothing or [].
     """
+    
     try:
-        if get_products_by_category(category_id) is None:
+        if get_category(category_id) is None:
+            print(category_id)
             raise DatabaseError("kategori id tidak ditemukan.")
         products = get_products_by_category(category_id)
         category = get_category(category_id)
-        category["products"] = products
+        if products:
+            category["products"] = products
+        else:
+            category["products"] = []
         return category
     except DatabaseError as e:
         return {"message": str(e)},404
@@ -117,13 +122,23 @@ def add_product_controller():
       If any required input is missing, the dictionary contains a "message" key with a "Semua inputan harus diisi." message and a 402 status code.
       If the product and image upload is successful, the dictionary contains a "message" key with an "upload produk berhasil" message and a 200 status code.
     """
-    
+    locations = []
     try:
         current_user = get_jwt_identity()
         if current_user["role"] != "admin":
             return {"message": "Unauthorized"}, 403
+        name = request.form.get("name")
+        description = request.form.get("description")
+        price = request.form.get("price")
+        quantity = request.form.get("quantity")
+        category_id = request.form.get("category_id")
+        if not name or not description or not price or not quantity or not category_id:
+            raise ValueError("Semua inputan harus diisi.")
+        if not get_category(category_id):
+            raise DatabaseError("Kategori ID tidak ditemukan.")
+        
         if "file" not in request.files:
-            return "no file part"
+            raise ValueError("masukkan file gambar")
         files = request.files.getlist("file")
         if not files:
             return "No selected files"
@@ -132,17 +147,9 @@ def add_product_controller():
             if file.content_type not in allowed_files:
                 return "File type not allowed"
 
-        name = request.form.get("name")
-        description = request.form.get("description")
-        price = int(request.form.get("price"))
-        quantity = int(request.form.get("quantity"))
-        category_id = int(request.form.get("category_id"))
-        if not get_category(category_id):
-            raise DatabaseError("Kategori ID tidak ditemukan.")
-        if not name or not description or not price or not quantity or not category_id:
-            raise ValueError("Semua inputan harus diisi.")
+        
 
-        locations = []
+        
         for file in files:
             location = "static/uploads/" + str(time.time()) + "_" + file.filename
             file.save(location)
@@ -165,7 +172,6 @@ def add_product_controller():
             if os.path.exists(location):
                 os.remove(location)
         raise e
-    
 
 
 def update_product_controller(product_id: int):
@@ -193,41 +199,13 @@ def update_product_controller(product_id: int):
             return {"message": "ID produk tidak ditemukan"}, 404
         name = request.form.get("name")
         description = request.form.get("description")
-        price = int(request.form.get("price"))
-        quantity = int(request.form.get("quantity"))
-        category_id = int(request.form.get("category_id"))
-
+        price = request.form.get("price")
+        quantity = request.form.get("quantity")
+        category_id = request.form.get("category_id")
         if not name or not description or not price or not quantity or not category_id:
             raise ValueError("Semua inputan harus diisi.")
-
-        if "file" not in request.files:
-            try:
-                update_product(
-                    product_id=product_id,
-                    name=name,
-                    description=description,
-                    price=price,
-                    quantity=quantity,
-                    category_id=category_id,
-                )
-                return {"message": "Product updated successfully"}, 200
-            except Exception as e:
-                raise e
-        files = request.files.getlist("file")
-        if not files:
-            raise ValueError("No selected files")
-        allowed_file_types = ["image/jpeg", "image/jpg", "image/webp", "image/png"]
-        for file in files:
-            if file.content_type not in allowed_file_types:
-                raise ValueError("File type not allowed for file: %s" % file.filename)
-        locations = []
-        for file in files:
-            location = "static/uploads/" + str(time.time()) + "_" + file.filename
-            file.save(location)
-            locations.append(location)
-
-    
-        images = get_all_product_images(product_id=product_id)
+        if get_products_by_category(category_id) is None:
+            raise DatabaseError("kategori id tidak ditemukan.")
         update_product(
             product_id=product_id,
             name=name,
@@ -235,19 +213,15 @@ def update_product_controller(product_id: int):
             price=price,
             quantity=quantity,
             category_id=category_id,
-            image_location=locations,
         )
-        for image in images:
-            if os.path.exists(image["image"]):
-                os.remove(image["image"])
+        return {"message": "update produk berhasil"}, 200
     except ValueError as ve:
         return {"message": str(ve)},422
+    except DatabaseError as e:
+        return {"message": str(e)},422
     except Exception as e:
-        for file in files:
-            if os.path.exists(location):
-                os.remove(location)
         return e 
-    return {"message": "update produk berhasil"}, 200
+    
 
 
 def delete_product_controller(product_id: int):
@@ -366,8 +340,20 @@ def upload_image_controller(product_id: int):
                 os.remove(location)
         raise e
     
-
-
+def get_image_by_id_controller(product_id: int, image_id: int):
+    try:
+        if get_product_by_id(product_id) is None:
+            raise DatabaseError("ID produk tidak ditemukan")
+        if get_image_by_product_id_and_image_id(product_id,image_id) is None:
+            raise DatabaseError("ID gambar tidak ditemukan")
+        else:
+            return get_image_by_product_id_and_image_id(product_id,image_id)
+    except Unauthorized as e:
+        return {"message": str(e)},422
+    except DatabaseError as e:
+        return {"message": str(e)},404
+    except Exception as e:
+        raise e
 def delete_image_by_id_controller(product_id: int, image_id: int):
     """
     Controller function to delete a specific image associated with a product.
@@ -389,15 +375,15 @@ def delete_image_by_id_controller(product_id: int, image_id: int):
             raise Unauthorized("Unauthorized")
         if get_product_by_id(product_id) is None:
             raise DatabaseError("ID produk tidak ditemukan")
-        if get_all_product_images(id) is None:
+        if get_image_by_product_id_and_image_id(product_id,image_id) is None:
             raise DatabaseError("ID gambar tidak ditemukan")
-        image = get_product_image_by_id(image_id)
+        image = get_image_by_product_id_and_image_id(product_id,image_id)
         if os.path.exists(image["image"]):
             os.remove(image["image"])
-        delete_image_by_id(id)
+        delete_image_by_id(image_id,product_id)
         return {"message": "image berhasil dihapus"}, 200
     except DatabaseError as e:
-        return {"message": str(e)},402
+        return {"message": str(e)},404
     except Unauthorized as e:
         return {"message": str(e)},422
     except Exception as e:
