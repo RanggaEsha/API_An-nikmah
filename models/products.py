@@ -100,7 +100,7 @@ def get_all_products(
         {order} {sort}
         limit %(limit)s offset %(offset)s
         """
-        print(query,values)
+
         cur.execute(query, values)
         
         conn.commit()
@@ -132,7 +132,6 @@ def get_all_products(
                     "category_id": item[6],
                 }
                 list_products.append(items)
-        print(query, values)
         return list_products
     except ValueError as e:
         return {"message": str(e)}

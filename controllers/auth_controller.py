@@ -3,6 +3,8 @@ from flask_jwt_extended import (create_access_token,get_jwt_identity)
 from models import *
 from datetime import timedelta
 
+
+
 def protected_controller():
     current_user = get_jwt_identity()
     return {'login as':current_user["username"]},200
@@ -21,6 +23,7 @@ def get_email_password_controller():
         email = request.form.get('email')
         password = request.form.get('password')
         user = find_email_password(email=email, password=password)
+        
         if user:
             access_token = create_access_token(identity={"id":user[0]['id'],"username":user[1]["username"],"role":user[2]["role"]},expires_delta=timedelta(hours=1))
             return {'token': access_token}
@@ -28,7 +31,7 @@ def get_email_password_controller():
     except ValueError as ve:
         return {"message": str(ve)},422
     except Exception as e:
-        return {"message": str(e)},422
+        raise e
 
 
 def register_controller():
@@ -51,7 +54,7 @@ def register_controller():
     except ValueError as ve:
         return {"message": str(ve)},404
     except Exception as e:
-        return {"message": str(e)},422
+        raise e
     
 def get_user_data_controller():
     try:
@@ -106,12 +109,11 @@ def register_admin_controller():
     except ValueError as ve:
         return {"message": str(ve)},404
     except Exception as e:
-        return {"message": str(e)},422
+        raise e
     
 def get_admin_data_controller():
     try:
         admin = get_jwt_identity()
-        print(admin)
         admin_id = admin["id"]
         if admin['role'] != 'admin':
             raise Exception("Unauthorized")

@@ -40,7 +40,6 @@ def add_category_controller():
     """
     try:
         current_user = get_jwt_identity()
-        print(current_user)
         if current_user['role'] != 'admin':
             raise Unauthorized('Unauthorized')
         name = request.form.get('name')
@@ -67,7 +66,6 @@ def update_category_controller(id: int):
     """
     try:
         current_user = get_jwt_identity()
-        print(current_user)
         if current_user['role'] != 'admin':
                 raise Unauthorized('Unauthorized')
         name = request.form.get('name')
@@ -96,7 +94,6 @@ def delete_category_controller(id):
     """
     try:
         current_user = get_jwt_identity()
-        print(current_user)
         if current_user['role'] != 'admin':
                 raise Unauthorized('Unauthorized')
         if get_category(id):

@@ -79,7 +79,6 @@ def get_carts_by_user_id(user_id: int,page: int,limit: int,max_date: int,min_dat
         if user_id:
             where.append("user_id = %(user_id)s")
             values["user_id"] = user_id
-
         if max_date and min_date:
             where.append("created_at BETWEEN %(min_date)s AND %(max_date)s")
             values["min_date"] = min_date
@@ -98,7 +97,6 @@ def get_carts_by_user_id(user_id: int,page: int,limit: int,max_date: int,min_dat
         SELECT * FROM carts {where}
         LIMIT %(limit)s OFFSET %(offset)s
         """
-        print(query, values)
         cur.execute(query, values)
         list_data = []
         data = cur.fetchall()
@@ -124,7 +122,7 @@ def get_carts_by_user_id(user_id: int,page: int,limit: int,max_date: int,min_dat
         cur.close()
 
 
-def get_cart_by_cart_id_and_user_id(cart_id: int, user_id: int):
+def   get_cart_by_cart_id_and_user_id(cart_id: int, user_id: int):
     """
     Retrieve carts based on cart ID.
 

@@ -1,4 +1,11 @@
 from db import conn
+from flask_bcrypt import Bcrypt 
+
+
+
+    
+
+
 
 def get_user_id(id: int):
     """
@@ -33,10 +40,13 @@ def find_email_password(email: str, password: str):
     """
     cur = conn.cursor()
     try:
-        cur.execute('SELECT id,first_name,last_name,email,password,role FROM users WHERE email = %s AND password = %s', (email, password))
+        cur.execute('SELECT id,first_name,last_name,email,password,role FROM users WHERE email = %s', (email,))
         user = cur.fetchone()
         if user:
-            return [{"id":user[0]},{"username":user[1]+" "+user[2]},{"role":user[5]}]
+            hashed_password = user[4]
+            bcrypt = Bcrypt()
+            if bcrypt.check_password_hash(hashed_password, password):
+                return [{"id":user[0]},{"username":user[1]+" "+user[2]},{"role":user[5]}]
     finally:
         cur.close()
     return None
@@ -57,7 +67,9 @@ def add_user_data(first_name,last_name,email,password):
     """
     cur = conn.cursor()
     try:
-        cur.execute('INSERT INTO users (first_name,last_name,email,password,role) VALUES (%s,%s,%s,%s,%s)',(first_name,last_name,email,password,"user"))
+        bcrypt = Bcrypt()
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        cur.execute('INSERT INTO users (first_name,last_name,email,password,role) VALUES (%s,%s,%s,%s,%s)',(first_name,last_name,email,hashed_password,"user"))
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -81,7 +93,9 @@ def add_admin_data(first_name,last_name,email,password):
     """
     cur = conn.cursor()
     try:
-        cur.execute('INSERT INTO users (first_name,last_name,email,password,role) VALUES (%s,%s,%s,%s,%s)',(first_name,last_name,email,password,"admin"))
+        bcrypt = Bcrypt()
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        cur.execute('INSERT INTO users (first_name,last_name,email,password,role) VALUES (%s,%s,%s,%s,%s)',(first_name,last_name,email,hashed_password,"admin"))
         conn.commit()
     except Exception as e:
         conn.rollback()

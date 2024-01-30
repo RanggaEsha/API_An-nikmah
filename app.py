@@ -6,11 +6,14 @@ from flask_jwt_extended import (
 )
 from flask_cors import CORS
 from flask_swagger_ui import get_swaggerui_blueprint
+from flask_bcrypt import Bcrypt 
+
 
 
 app = Flask(__name__)
 jwt = JWTManager(app)
 CORS(app)
+bcrypt = Bcrypt(app) 
 app.config["JWT_SECRET_KEY"] = "bacotttttttt"
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
 API_URL = "/static/openapi-4.json"  # Our API url (can of course be a local resource)
@@ -206,13 +209,15 @@ def delete_one_user_cart(cart_id):
 def get_user_transactions():
     return get_all_user_transactions_controller()
 
+@app.post("/transactions/carts")
+@jwt_required()
+def add_user_transaction_from_carts():
+    return add_transaction_from_carts_controller()
 
 @app.post("/transactions")
 @jwt_required()
 def add_user_transactions():
     return add_user_transactions_controller()
- 
-
  
 @app.delete("/transactions")
 @jwt_required()

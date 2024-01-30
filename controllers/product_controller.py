@@ -66,7 +66,6 @@ def get_products_by_category_controller(category_id: int):
     
     try:
         if get_category(category_id) is None:
-            print(category_id)
             raise DatabaseError("kategori id tidak ditemukan.")
         products = get_products_by_category(category_id)
         category = get_category(category_id)
