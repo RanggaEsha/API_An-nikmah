@@ -2,6 +2,7 @@ from flask import request
 from flask_jwt_extended import (create_access_token,get_jwt_identity)
 from models import *
 from datetime import timedelta
+from errors import Unauthorized
 
 
 
@@ -9,29 +10,47 @@ def protected_controller():
     current_user = get_jwt_identity()
     return {'login as':current_user["username"]},200
 
-
 # USER
 
 def get_email_password_controller():
     """
-    Controller function to authenticate and generate an access token for the user.
+    Controller function to authenticate users based on email and password.
 
     Returns:
-    - dict: A dictionary containing an access token if authentication is successful, or an error message with a 401 status code if authentication fails.
+        dict: A dictionary containing an access token if authentication is successful.
+        dict: Error message with a 422 status code if authentication fails.
     """
     try:
+        # Retrieving email and password from the request form
         email = request.form.get('email')
         password = request.form.get('password')
-        user = find_email_password(email=email, password=password)
         
+        # Finding user information based on email and password
+        user = find_email_password(email=email, password=password)   
+        
+        # If user information is found, create an access token
         if user:
-            access_token = create_access_token(identity={"id":user[0]['id'],"username":user[1]["username"],"role":user[2]["role"]},expires_delta=timedelta(hours=1))
+            access_token = create_access_token(
+                identity={
+                    "id": user['id'],
+                    "username": user["username"],
+                    "role": user["role"]
+                },
+                expires_delta=timedelta(hours=1)
+            )
             return {'token': access_token}
-        return {"msg": "Username atau password salah"}, 404
-    except ValueError as ve:
-        return {"message": str(ve)},422
+        
+        # If user information is not found, raise an error
+        raise ValueError("Username atau password salah")
+    
+    except ValueError as e:
+        # Returning an error message if authentication fails
+        return {"message": str(e)}, 422
+    
     except Exception as e:
+        # Raising an error if any other error occurs
         raise e
+
 
 
 def register_controller():
@@ -39,44 +58,87 @@ def register_controller():
     Controller function to register a new user.
 
     Returns:
-    - dict: A dictionary containing a success message if registration is successful, or an error message with a 404 status code if the email is already registered.
+        dict: A dictionary containing a success message if registration is successful.
+        dict: Error message with a 404 status code if the email is already registered.
     """
     try:
+        # Retrieving user information from the request form
         first_name = request.form.get('first_name')
         last_name = request.form.get('last_name')
         email = request.form.get('email')
         password = request.form.get('password')
+        
+        # Checking if the email is already registered
         register_user = find_email(request)
         if register_user:
-            raise ValueError('email sudah terdaftar')
-        add_user_data(first_name,last_name,email,password)
-        return {'message': 'register berhasil'}, 200
+            raise ValueError('Email sudah terdaftar')
+        
+        # Adding user data to the database
+        add_user_data(first_name, last_name, email, password)
+        return {'message': 'Register berhasil'}, 200
+    
     except ValueError as ve:
-        return {"message": str(ve)},404
+        # Returning an error message if the email is already registered
+        return {"message": str(ve)}, 404
+    
     except Exception as e:
+        # Raising an error if any other error occurs
         raise e
+
     
 def get_user_data_controller():
+    """
+    Controller function to retrieve user data.
+
+    Returns:
+        dict: User data if retrieval is successful.
+    Raises:
+        Exception: If an error occurs during the retrieval process.
+    """
     try:
+        # Getting the user ID from the JWT token
         user_id = get_jwt_identity()["id"]
         
+        # Retrieving user data based on the user ID
         return get_user_data(user_id)
+    
     except Exception as e:
-        return {"message": str(e)},422
+        # Raising an error if any exception occurs during the process
+        raise e
+
 
 def update_data_user_controller():
+    """
+    Controller function to update user data.
+
+    Returns:
+        dict: Success message if the update is successful.
+    Raises:
+        ValueError: If there is a validation error.
+        Exception: If an error occurs during the update process.
+    """
     try:
+        # Getting the user ID from the JWT token
         user_id = get_jwt_identity()['id']
+        
+        # Retrieving updated user data from the request
         first_name = request.form.get('first_name')
         last_name = request.form.get('last_name')
         email = request.form.get('email')
         password = request.form.get('password')
-        update_data_user(user_id,first_name,last_name,email,password)
-        return {'message': 'register berhasil'}, 200
-    except ValueError as ve:
-        return {"message": str(ve)},422
+        
+        # Updating user data in the database
+        update_data_user(user_id, first_name, last_name, email, password)
+        return {'message': 'Data user berhasil diperbarui'}, 200
+    
+    except ValueError as e:
+        # Handling validation errors
+        return {"message": str(e)}, 422
+    
     except Exception as e:
-        return {"message": str(e)},422
+        # Raising an error if any exception occurs during the process
+        raise e
+
     
 def delete_user_controller():
     try:
@@ -84,65 +146,140 @@ def delete_user_controller():
         delete_user(user_id)
         return {"message": "berhasil menghapus data user"}
     except Exception as e:
-        return {"message": str(e)},422
+        raise e
 
 # ADMIN 
 
     
 def register_admin_controller():
     """
-    Controller function to register a new user.
+    Controller function to register a new admin.
 
     Returns:
-    - dict: A dictionary containing a success message if registration is successful, or an error message with a 404 status code if the email is already registered.
+        dict: Success message if the registration is successful.
+    Raises:
+        ValueError: If there is a validation error.
+        Exception: If an error occurs during the registration process.
     """
     try:
+        # Retrieving user data from the request
         first_name = request.form.get('first_name')
         last_name = request.form.get('last_name')
         email = request.form.get('email')
         password = request.form.get('password')
+        
+        # Checking if the email is already registered
         register_user = find_email(request)
         if register_user:
-            raise ValueError('email sudah terdaftar')
-        add_admin_data(first_name,last_name,email,password)
-        return {'message': 'register berhasil'}, 200
-    except ValueError as ve:
-        return {"message": str(ve)},404
+            raise ValueError('Email already registered')
+        
+        # Adding admin data to the database
+        add_admin_data(first_name, last_name, email, password)
+        
+        return {'message': 'Registration successful'}, 200
+    
+    except ValueError as e:
+        # Handling validation errors
+        return {"message": str(e)}, 404
+    
     except Exception as e:
+        # Raising an error if any exception occurs during the process
         raise e
+
     
 def get_admin_data_controller():
+    """
+    Controller function to retrieve admin data.
+
+    Returns:
+        dict: Admin data if the request is authorized.
+    Raises:
+        Unauthorized: If the request is not authorized.
+        Exception: If any other error occurs during the process.
+    """
     try:
+        # Getting the admin identity from the JWT token
         admin = get_jwt_identity()
         admin_id = admin["id"]
+        
+        # Checking if the user is an admin
         if admin['role'] != 'admin':
             raise Exception("Unauthorized")
+        
+        # Retrieving admin data from the database and return it
         return get_user_data(admin_id)
+    
+    except Unauthorized as e:
+        # Handling unauthorized access
+        return {"message": str(e)}, 422
     except Exception as e:
-        return {"message": str(e)},422
+        # Raising an error if any other exception occurs
+        raise e
+
 
 def update_data_admin_controller():
+    """
+    Controller function to update admin data.
+
+    Returns:
+        dict: Success message if the data is updated successfully.
+    Raises:
+        Unauthorized: If the request is not authorized.
+        Exception: If any other error occurs during the process.
+    """
     try:
+        # Getting the admin identity from the JWT token
         admin = get_jwt_identity()
         admin_id = admin["id"]
+        
+        # Checking if the user is an admin
         if admin['role'] != 'admin':
-            raise Exception("Unauthorized")   
+            raise Unauthorized("Unauthorized")   
+        
+        # Getting data from the request
         first_name = request.form.get('first_name')
         last_name = request.form.get('last_name')
         password = request.form.get('password')
         email = request.form.get('email')
         
-        update_data_user(admin_id,first_name,last_name,email,password)
-        return {'message': 'register berhasil'}, 200
-    except ValueError as ve:
-        return {"message": str(ve)},404
+        # Updating admin data in the database
+        update_data_user(admin_id, first_name, last_name, email, password)
+        return {'message': 'Data updated successfully'}, 200
+    
+    except Unauthorized as e:
+        # Handling unauthorized access
+        return {"message": str(e)}, 404
     except Exception as e:
-        return {"message": str(e)},422
+        # Raising an error if any other exception occurs
+        raise e
+
     
 def delete_admin_controller():
+    """
+    Controller function to delete admin data.
+
+    Returns:
+        dict: Success message if the data is deleted successfully.
+    Raises:
+        Unauthorized: If the request is not authorized.
+        Exception: If any other error occurs during the process.
+    """
     try:
-        user_id=get_jwt_identity()['id']
-        delete_user(user_id)
-        return {"message": "berhasil menghapus data admin"}
+        # Getting the user ID from the JWT token
+        user_id = get_jwt_identity()['id']
+        
+        # Checking if the user is an admin
+        if get_jwt_identity()['role'] == "admin":
+            # Deleting the user
+            delete_user(user_id)
+            return {"message": "Admin data deleted successfully"}
+        else:
+            # If the user is not an admin, raise unauthorized access
+            raise Unauthorized("Unauthorized")
+    
+    except Unauthorized as e:
+        # Handling unauthorized access
+        return {"message": str(e)}, 422
     except Exception as e:
-        return {"message": str(e)},422
+        # Raising an error if any other exception occurs
+        raise e

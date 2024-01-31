@@ -15,22 +15,27 @@ def get_categories_controller():
 
 def get_category_controller(id: int):
     """
-    Controller function to retrieve a category by category ID.
+    Retrieves category information based on ID.
 
     Parameters:
-    - id (int): The ID of the category to be retrieved.
+        id (int): The ID of the category to retrieve.
 
     Returns:
-    - dict or None: A dictionary containing category information including category ID and name if the category is found, or an error message with a 404 status code if the category ID is not found.
+        dict: Information about the category if found.
+        dict: Error message if the category is not found.
     """
     try:
+        # Checking if the category with the given ID is found
         if get_category(id) is None:
-            raise ValueError('ID kategori tidak ditemukan')
+            raise ValueError(f'Category with ID {id} not found')
         return get_category(id)
     except ValueError as e:
-         return {"message": str(e)},422
+        # Returning an error message if the category is not found
+        return {"message": str(e)}, 422
     except Exception as e:
-         raise {"message":"inputan anda salah"}
+        # Returning an error if any other error occurs
+        raise e
+
 def add_category_controller():
     """
     Controller function to add a new category.
@@ -39,70 +44,100 @@ def add_category_controller():
     - dict: A dictionary containing a success message if the category is added successfully, or an error message with a 404 status code if the category name is already registered.
     """
     try:
+        # Checking user role
         current_user = get_jwt_identity()
         if current_user['role'] != 'admin':
             raise Unauthorized('Unauthorized')
+        
+        # Retrieving category name from the request
         name = request.form.get('name')
+        
+        # Checking if the category name is already registered
         if get_category_name(name):
-            raise DatabaseError('Nama kategori sudah terdaftar')
+            raise DatabaseError('Category name is already registered')
+        
+        # Adding the category
         add_category(name)
-        return {'message':'kategori berhasil ditambahkan'},200
+        
+        # Returning success message
+        return {'message': 'Category added successfully'}, 200
     except DatabaseError as e:
-        return {"message": str(e)},404
-    except Unauthorized as ve:
-        return {"message": str(ve)},422
+        # Returning error message if there's a database error
+        return {"message": str(e)}, 404
+    except Unauthorized as e:
+        # Returning unauthorized message
+        return {"message": str(e)}, 422
     except Exception as e:
-        return e
+        # Raising other exceptions
+        raise e
+
 
 def update_category_controller(id: int):
     """
-    Controller function to update a category.
+    Controller function to update an existing category.
 
     Parameters:
-    - id (int): The ID of the category to be updated.
+        id (int): The ID of the category to update.
 
     Returns:
-    - dict: A dictionary containing a success message if the category is updated successfully, or error messages with a 404 status code if the category ID is not found or the category name is already registered.
+    - dict: A dictionary containing a success message if the category is updated successfully, or an error message with a 404 status code if the category ID is not found, or an error message with a 422 status code if the user is not authorized or if the category name is already registered.
     """
     try:
+        # Checking user role
         current_user = get_jwt_identity()
         if current_user['role'] != 'admin':
-                raise Unauthorized('Unauthorized')
+            raise Unauthorized('Unauthorized')
+        
+        # Retrieving category name from the request
         name = request.form.get('name')
+        
+        # Checking if the category with the given ID exists
         if get_category(id) is None:
-            raise DatabaseError('ID kategori tidak ditemukan')
+            raise DatabaseError(f'Category with ID {id} not found')
+        
+        # Checking if the category name is already registered
         if get_category_name(name):
-            raise DatabaseError('Nama kategori sudah terdaftar')
-        update_category(id,name)
-        return {'message':'Kategori berhasil diubah'},200
+            raise DatabaseError('Category name is already registered')
+        
+        # Updating the category
+        update_category(id, name)
+        return {'message': 'Category updated successfully'}, 200
+    
     except DatabaseError as e:
-        return {"message": str(e)},404
-    except Unauthorized as ve:
-        return {"message": str(ve)},422
+        return {"message": str(e)}, 404
+    except Unauthorized as e:
+        return {"message": str(e)}, 422
     except Exception as e:
-        return {"message": str(e)},422
+        raise e
 
 def delete_category_controller(id):
     """
     Controller function to delete a category.
 
     Parameters:
-    - id (int): The ID of the category to be deleted.
+        id (int): The ID of the category to delete.
 
     Returns:
-    - dict: A dictionary containing a success message if the category is deleted successfully, or an error message with a 404 status code if the category ID is not found.
+    - dict: A dictionary containing a success message if the category is deleted successfully, or an error message with a 404 status code if the category ID is not found, or an error message with a 422 status code if the user is not authorized.
     """
     try:
+        # Checking user role
         current_user = get_jwt_identity()
         if current_user['role'] != 'admin':
-                raise Unauthorized('Unauthorized')
+            raise Unauthorized('Unauthorized')
+        
+        # Checking if the category with the given ID exists
         if get_category(id):
+            # Deleting the category
             delete_category(id)
-            return {'message':'kategori berhasil dihapus'},200
-        raise DatabaseError("ID kategori tidak ditemukan")
-    except Unauthorized as ve:
-        return {"message": str(ve)},422
+            return {'message': 'Category deleted successfully'}, 200
+        
+        # Raising error if category ID is not found
+        raise DatabaseError(f"Category with ID {id} not found")
+    
+    except Unauthorized as e:
+        return {"message": str(e)}, 422
     except DatabaseError as e:
-        return {"message": str(e)},404
+        return {"message": str(e)}, 404
     except Exception as e:
-        return {"message": str(e)},422
+        raise e

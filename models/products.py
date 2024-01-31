@@ -1,34 +1,25 @@
 from db import conn
 from datetime import datetime
 
-
 def get_all_products(
-    page: int, limit: int, category: str, keyword: str, min_price: int, max_price: int, order_by:str,sort: str='asc'
+    page: int, limit: int, category: str, keyword: str, min_price: int, max_price: int, order_by: str, sort: str = 'asc'
 ):
     """
-    Retrieve a list of products based on specified parameters.
+    Retrieve a list of products based on provided filters.
 
     Parameters:
-    - page (int): The page number for pagination.
-    - limit (int): The number of products to retrieve per page.
-    - category (str): The category name for filtering products (optional).
-    - keyword (str): The keyword to search for in product names (optional).
-    - min_price (int): The minimum price for filtering products (optional).
-    - max_price (int): The maximum price for filtering products (optional).
+        page (int): The page number for pagination.
+        limit (int): The maximum number of products per page.
+        category (str): The category of the products.
+        keyword (str): The keyword to search for in product names.
+        min_price (int): The minimum price of products to include.
+        max_price (int): The maximum price of products to include.
+        order_by (str): The field to order the products by.
+        sort (str, optional): The sorting order ('asc' or 'desc'). Defaults to 'asc'.
 
     Returns:
-    - list: A list of dictionaries representing products.
-        data = [{
-                    "id": item[0],
-                    "name": item[1],
-                    "description": item[2],
-                    "price": item[3],
-                    "quantity": item[4],
-                    "created_at": item[5],
-                    "category": item[8],
-                    "category_id": item[6],
-                }]
-    Each dictionary contains the following keys:
+        list: A list of dictionaries containing product information.
+        Each dictionary contains the following keys:
         - "id" (int): Product ID.
         - "name" (str): Product name.
         - "description" (str): Product description.
@@ -46,54 +37,63 @@ def get_all_products(
         join = []
         where = []
         whitelist_orders = [
-        "id", "name","price","category_id"
+            "id", "name", "price", "category_id"
         ]
+        # Check if the provided order_by field is valid
         if order_by:
             if order_by not in whitelist_orders:
-                raise ValueError("Value Order By tidak ada didalam whitelist, whitelist yang tersedia: "+", ".join(whitelist_orders))
+                raise ValueError("Value Order By tidak ada didalam whitelist, whitelist yang tersedia: " + ", ".join(whitelist_orders))
         else:
             order_by = ''
-        whitelist_sorts=[
-            "asc","desc"
+        whitelist_sorts = [
+            "asc", "desc"
         ]
+        # Check if the provided sort field is valid
         if sort:
             if sort not in whitelist_sorts:
-                raise ValueError("Value Sort By tidak ada didalam whitelist, whitelist yang tersedia: "+", ".join(whitelist_sorts))
+                raise ValueError("Value Sort By tidak ada didalam whitelist, whitelist yang tersedia: " + ", ".join(whitelist_sorts))
         else:
             sort = ''
         if keyword:
+            # Add filter for product name based on keyword
             where.append("p.name ilike %(keyword)s")
             values["keyword"] = "%" + keyword + "%"
         if category:
+            # Add filter for category name based on category
             where.append("categories.name ilike %(category)s")
             join.append("JOIN categories on p.category_id = categories.id")
             values["category"] = "%" + category + "%"
         if max_price and min_price:
+            # Add filter for price range between min_price and max_price
             where.append("price BETWEEN %(min_price)s AND %(max_price)s")
             values["min_price"] = min_price
             values["max_price"] = max_price
         elif min_price:
+            # Add filter for minimum price
             where.append("price >= %(min_price)s")
             values["min_price"] = min_price
         elif max_price:
+            # Add filter for maximum price
             where.append("price <= %(max_price)s")
             values["max_price"] = max_price
-        
+
         if len(where) > 0:
             where = "WHERE " + " AND ".join(where)
         else:
             where = ""
 
+        # Check if both order_by and sort are provided together
         if not order_by and sort:
-            raise ValueError("harus menginputkan juga order_by, wihtelist yang tersedia: "+", ".join(whitelist_orders))
+            raise ValueError("harus menginputkan juga order_by, wihtelist yang tersedia: " + ", ".join(whitelist_orders))
         if order_by:
             order = f"ORDER BY {order_by}"
+            # Ensure the sort parameter is included if provided
             if sort:
                 sort
             else:
-                sort = ''
+                sort = ''  # Assigning an empty string to sort if it's not provided
         else:
-            order =''
+            order = ''
         query = f"""
         SELECT * FROM products p 
         {' '.join(join)} {where}
@@ -102,12 +102,14 @@ def get_all_products(
         """
 
         cur.execute(query, values)
-        
+
         conn.commit()
         products = cur.fetchall()
+        # If no products are fetched and the page exceeds the total number of rows, return an empty data list 
         if not products and page >= cur.rowcount:
             return {"data": []}
         list_products = []
+        # Iterate through fetched products and prepare them for response
         for item in products:
             if category is not None:
                 items = {
@@ -142,26 +144,17 @@ def get_all_products(
         cur.close()
 
 
+
 def get_products_by_category(category_id: int):
     """
-    Retrieve a list of products based on a specified category ID.
+    Retrieve products based on the provided category ID.
 
-    Parameters:
-    - category_id (int): The ID of the category for which products are to be retrieved.
+    Parameter:
+        category_id (int): The ID of the category to retrieve products for.
 
     Returns:
-     - list: A list of dictionaries representing products.
-        data = [{
-                    "id": item[0],
-                    "name": item[1],
-                    "description": item[2],
-                    "price": item[3],
-                    "quantity": item[4],
-                    "created_at": item[5],
-                    "category": item[8],
-                    "category_id": item[6],
-                }]
-      Each dictionary contains the following keys:
+        list or None: A list of dictionaries containing product information if found, otherwise None.
+        Each dictionary contains the following keys:
         - "id" (int): Product ID.
         - "name" (str): Product name.
         - "description" (str): Product description.
@@ -169,7 +162,6 @@ def get_products_by_category(category_id: int):
         - "quantity" (int): Product quantity.
         - "created_at" (str): Product creation timestamp.
         - "category_id" (int): Product category ID.
-    If no products are found, returns None.
     """
     cur = conn.cursor()
     try:
@@ -215,16 +207,6 @@ def get_product_by_id(id: int):
     Returns:
     - dict or None: A dictionary representing the product with the specified ID.
      - list: A list of dictionaries representing products.
-        data = {
-                    "id": data[0],
-                    "name": data[1],
-                    "description": data[2],
-                    "price": data[3],
-                    "quantity": data[4],
-                    "created_at": data[5],
-                    "category": data[8],
-                    "category_id": data[6],
-                }
       The dictionary contains the following keys:
         - "id" (int): Product ID.
         - "name" (str): Product name.
@@ -266,7 +248,7 @@ def get_product_by_id(id: int):
         cur.close()
 
 
-def upload_product(name, description, price, quantity, category_id):
+def upload_product(name: str, description: str, price: int, quantity: int, category_id: int):
     """
     Upload a new product to the database.
 
@@ -300,7 +282,7 @@ def upload_product(name, description, price, quantity, category_id):
         cur.close()
 
 
-def update_product(product_id, name, description, price, quantity, category_id):
+def update_product(product_id: int, name: str, description: str, price: int, quantity: int, category_id: int):
     """
     Update an existing product in the database.
 
@@ -342,10 +324,8 @@ def update_product(product_id, name, description, price, quantity, category_id):
     finally:
         cur.close()
 
-    
 
-
-def update_product_quantity(product_id, quantity):
+def update_product_quantity(product_id: int, quantity: int):
     """
     Update the quantity of an existing product in the database.
 
@@ -377,7 +357,7 @@ def update_product_quantity(product_id, quantity):
         cur.close()
 
 
-def delete_product(product_id):
+def delete_product(product_id: int):
     """
     Delete a product from the database based on its ID.
 
@@ -401,7 +381,7 @@ def delete_product(product_id):
 # PRODUCT IMAGES MODELS
 
 
-def get_all_product_images(product_id):
+def get_all_product_images(product_id: int):
     """
     Retrieve a list of images associated with a specific product.
 
@@ -437,13 +417,13 @@ def get_all_product_images(product_id):
         cur.close()
 
 
-def get_image_by_product_id_and_image_id(id,product_id):
+def get_image_by_product_id_and_image_id(image_id: int,product_id: int):
     """
     Retrieve a product image based on its ID.
 
     Parameters:
     - id (int): The ID of the product image to be retrieved.
-
+    - product_id (int): The ID of the product the image belongs to.
     Returns:
     - dict: A dictionary representing the product image with the specified ID.
       The dictionary contains the following keys:
@@ -453,7 +433,7 @@ def get_image_by_product_id_and_image_id(id,product_id):
     """
     cur = conn.cursor()
     try:
-        cur.execute("SELECT * FROM product_images where id = %s AND product_id = %s", (id,product_id))
+        cur.execute("SELECT * FROM product_images where id = %s AND product_id = %s", (image_id,product_id))
         image = cur.fetchone()
         if image:
             new_image = {"id": image[0], "image": image[1], "product_id": image[2]}
@@ -466,7 +446,7 @@ def get_image_by_product_id_and_image_id(id,product_id):
         cur.close()
 
 
-def upload_product_images(image_location, product_id):
+def upload_product_images(image_location: str, product_id: int):
     """
     Upload product images to the database for a specific product.
 
@@ -492,15 +472,13 @@ def upload_product_images(image_location, product_id):
         cur.close()
 
 
-def delete_image_by_id(product_id,image_id):
+def delete_image_by_id(product_id: int,image_id: int):
     """
-    Delete a product image from the database based on its ID.
+    Delete an image by its ID and associated product ID.
 
     Parameters:
-    - id (int): The ID of the product image to be deleted.
-
-    Returns:
-    - None
+        product_id (int): The ID of the product the image belongs to.
+        image_id (int): The ID of the image to delete.
     """
     cur = conn.cursor()
     try:
@@ -513,7 +491,7 @@ def delete_image_by_id(product_id,image_id):
         cur.close()
 
 
-def delete_images_by_product_id(product_id):
+def delete_images_by_product_id(product_id: int):
     """
     Delete all product images associated with a specific product.
 

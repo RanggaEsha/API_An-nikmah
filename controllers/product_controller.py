@@ -7,22 +7,29 @@ from flask_jwt_extended import get_jwt_identity
 
 def get_all_products_controller():
     """
-    Controller function to retrieve a list of products based on specified parameters.
+    Get all products based on specified filters.
+
+    This function retrieves a list of products based on optional query parameters.
 
     Query Parameters:
-    - limit (int, optional): The number of products to retrieve per page (default: 5).
-    - page (int, optional): The page number for pagination (default: 1).
-    - category (str, optional): The category name for filtering products.
-    - keyword (str, optional): The keyword to search for in product names.
-    - max_price (int, optional): The maximum price for filtering products.
-    - min_price (int, optional): The minimum price for filtering products.
+    - limit: Number of products per page (default is 5).
+    - page: Page number for pagination (default is 1).
+    - category: Filter by category name.
+    - keyword: Search keyword.
+    - max_price: Maximum price filter.
+    - min_price: Minimum price filter.
+    - order_by: Field to order by (e.g., 'price', 'name').
+    - sort: Sorting order ('asc' for ascending, 'desc' for descending).
 
     Returns:
-    - dict or tuple: A dictionary containing the list of products or an error message with status code.
-      If products are found, the dictionary contains the "products" key with the list of products.
-      If no products are found, the dictionary contains nothing or [].
+    - dict: A dictionary containing product data based on the specified filters.
+
+    Raises:
+    - DatabaseError: If the specified category is not found in the database.
+    - Exception: For other unexpected errors.
     """
     try:
+        # Retrieve query parameters from the request
         limit = int(request.args.get("limit", 5))
         page = int(request.args.get("page", 1))
         category = request.args.get("category")
@@ -31,8 +38,12 @@ def get_all_products_controller():
         min_price = request.args.get("min_price")
         order_by = request.args.get("order_by")
         sort = request.args.get("sort")
-        if get_category_name(category):
-            raise DatabaseError("Kategori ID tidak ditemukan.")
+        
+        # Check if the specified category exists in the database
+        if not get_category_name(category):
+            raise DatabaseError(f"The category '{category}' does not exist.")
+        
+        # Call the model function to fetch products based on the filters
         data = get_all_products(
             page=page,
             limit=limit,
@@ -43,40 +54,60 @@ def get_all_products_controller():
             order_by=order_by,
             sort=sort
         )
-        return data
+        
+        # Return the fetched data
+        if data:
+            return data
+        else:
+            return {"data": []}
     except DatabaseError as e:
-        return {"message": str(e)},404
+        # Handle DatabaseError with appropriate error message
+        return {"message": str(e), "data": []}, 404
     except Exception as e:
+        # Handle other unexpected errors by raising them
         raise e
 
 
 def get_products_by_category_controller(category_id: int):
     """
-    Controller function to retrieve a list of products based on a specified category ID.
+    Get products belonging to a specific category.
+
+    This function retrieves products that belong to the specified category ID.
 
     Parameters:
-    - category_id (int): The ID of the category for which products are to be retrieved.
+    - category_id (int): The ID of the category.
 
     Returns:
-    - dict or tuple: A dictionary containing the category information and the list of products or an error message with status code.
-      If the category ID is not found, the dictionary contains a "message" key with an error message and a 404 status code.
-      If products are found, the dictionary contains the "category" key with the category information and the "products" key with the list of products.
-      If no products are found, the "products" key contains a If no products are found, the dictionary contains nothing or [].
+    - dict: A dictionary containing category information along with its associated products.
+
+    Raises:
+    - DatabaseError: If the specified category ID is not found in the database.
+    - Exception: For other unexpected errors.
     """
-    
     try:
+        # Check if the specified category ID exists in the database
         if get_category(category_id) is None:
-            raise DatabaseError("kategori id tidak ditemukan.")
+            raise DatabaseError(f"The category with ID {category_id} was not found.")
+        
+        # Retrieve products belonging to the specified category
         products = get_products_by_category(category_id)
+        
+        # Get category information
         category = get_category(category_id)
+        
+        # Add products to the category dictionary
         if products:
             category["products"] = products
         else:
             category["products"] = []
+        
+        # Return the category with its associated products
         return category
     except DatabaseError as e:
-        return {"message": str(e)},404
+        # Handle DatabaseError with appropriate error message
+        return {"message": str(e)}, 404
     except Exception as e:
+        # Handle other unexpected errors by raising them
         raise e
 
 def get_product_by_id_controller(id: int):
@@ -97,76 +128,97 @@ def get_product_by_id_controller(id: int):
             raise ValueError("ID produk harus diisi.")
         product = get_product_by_id(id)
         if product is None:
-            raise DatabaseError("ID produk tidak ditemukan")
+            raise DatabaseError(f"produk dengan ID {id} tidak ditemukan")
         return product
     except ValueError as e:
         return {"message": str(e)},422
     except DatabaseError as e:
-        return {"message": str(e)},404
+        return {"message": str(e),"data":[]},404
     except Exception as e:
         raise e
 
 
 def add_product_controller():
     """
-    Controller function to add a new product.
+    Add a new product to the database along with its images.
+
+    This function handles the addition of a new product to the database. It also handles the upload of product images.
 
     Returns:
-    - dict or tuple: A dictionary containing success message or an error message with status code.
-      If the user is not authorized (not an admin), the dictionary contains a "message" key with an "Unauthorized" message and a 403 status code.
-      If no file is provided, the dictionary contains a "message" key with a "no file part" message.
-      If no selected files are provided, the dictionary contains a "message" key with a "No selected files" message.
-      If the file type is not allowed, the dictionary contains a "message" key with a "File type not allowed" message.
-      If the category ID is not found, the dictionary contains a "message" key with a "Kategori ID tidak ditemukan." message and a 404 status code.
-      If any required input is missing, the dictionary contains a "message" key with a "Semua inputan harus diisi." message and a 402 status code.
-      If the product and image upload is successful, the dictionary contains a "message" key with an "upload produk berhasil" message and a 200 status code.
+    - dict: A message indicating the success or failure of the product upload.
+
+    Raises:
+    - ValueError: If any required input fields are missing or if the file type is not allowed.
+    - DatabaseError: If the specified category ID is not found in the database.
+    - Exception: For other unexpected errors.
     """
     locations = []
     try:
+        # Get current user identity from JWT token
         current_user = get_jwt_identity()
+        # Check if the current user has admin role
         if current_user["role"] != "admin":
             return {"message": "Unauthorized"}, 403
+        
+        # Retrieve product information from request form data
         name = request.form.get("name")
         description = request.form.get("description")
         price = request.form.get("price")
         quantity = request.form.get("quantity")
         category_id = request.form.get("category_id")
-        if not name or not description or not price or not quantity or not category_id:
-            raise ValueError("Semua inputan harus diisi.")
-        if not get_category(category_id):
-            raise DatabaseError("Kategori ID tidak ditemukan.")
         
+        # Check if all required input fields are provided
+        if not name or not description or not price or not quantity or not category_id:
+            raise ValueError("All input fields are required.")
+        
+        # Check if the specified category ID exists in the database
+        if not get_category(category_id):
+            raise DatabaseError(f"The category with ID {category_id} was not found.")
+        
+        # Check if file is included in the request
         if "file" not in request.files:
-            raise ValueError("masukkan file gambar")
+            raise ValueError("Please include the image file.")
+        
+        # Retrieve and validate file(s) from the request
         files = request.files.getlist("file")
         if not files:
-            return "No selected files"
+            raise ValueError("No selected files")
         allowed_files = ["image/jpeg", "image/jpg", "image/webp", "image/png"]
         for file in files:
             if file.content_type not in allowed_files:
-                return "File type not allowed"
-
+                raise ValueError("File type not allowed")
         
-
-        
+        # Upload image files and save their locations
         for file in files:
             location = "static/uploads/" + str(time.time()) + "_" + file.filename
             file.save(location)
             locations.append(location)
-            last_inserted_id = upload_product(
-                name=name,
-                description=description,
-                price=price,
-                quantity=quantity,
-                category_id=category_id,
-            )
-            upload_product_images(locations, last_inserted_id)
-            return {"message": "upload produk berhasil"}, 200
+        
+        # Upload product information to the database
+        last_inserted_id = upload_product(
+            name=name,
+            description=description,
+            price=price,
+            quantity=quantity,
+            category_id=category_id,
+        )
+        
+        # Upload product images to the database
+        upload_product_images(locations, last_inserted_id)
+        
+        # Return success message
+        return {"message": "Product upload successful"}, 200
+    
     except ValueError as ve:
-        return {"message": str(ve)},422
+        # Handle ValueError with appropriate error message
+        return {"message": str(ve)}, 422
+    
     except DatabaseError as e:
-        return {"message": str(e)},404
+        # Handle DatabaseError with appropriate error message
+        return {"message": str(e)}, 404
+    
     except Exception as e:
+        # If an unexpected error occurs, remove uploaded files and raise the error
         for file in locations:
             if os.path.exists(location):
                 os.remove(location)
@@ -175,36 +227,49 @@ def add_product_controller():
 
 def update_product_controller(product_id: int):
     """
-    Controller function to update an existing product.
+    Update product information in the database.
 
-    Parameters:
+    This function handles the update of product information in the database. It checks the user role,
+    verifies if the product exists, validates input fields, and updates the product details.
+
+    Args:
     - product_id (int): The ID of the product to be updated.
 
     Returns:
-    - dict or tuple: A dictionary containing success message or an error message with status code.
-      If the user is not authorized (not an admin), the dictionary contains a "message" key with an "Unauthorized" message and a 403 status code.
-      If the product ID is not found, the dictionary contains a "message" key with an "ID produk tidak ditemukan" message and a 404 status code.
-      If any required input is missing, the dictionary contains a "message" key with a "Semua inputan harus diisi." message and a 402 status code.
-      If the product is updated successfully, the dictionary contains a "message" key with a "Product updated successfully" message and a 200 status code.
-      If no files are provided, the dictionary contains a "message" key with a "No selected files" message and a 400 status code.
-      If the file type is not allowed, the dictionary contains a "message" key with a "File type not allowed for file: %s" message and a 400 status code.
-      If there is an error during the update, the dictionary contains a "message" key with an "update produk berhasil" message and a 200 status code.
+    - dict: A message indicating the success or failure of the product update.
+
+    Raises:
+    - ValueError: If any required input fields are missing.
+    - DatabaseError: If the specified category ID is not found in the database.
+    - Exception: For other unexpected errors.
     """
     try:
+        # Get current user identity from JWT token
         current_user = get_jwt_identity()
+        # Check if the current user has admin role
         if current_user["role"] != "admin":
             return {"message": "Unauthorized"}, 401
+        
+        # Check if the product exists
         if get_product_by_id(product_id) is None:
-            return {"message": "ID produk tidak ditemukan"}, 404
+            return {"message": f"Product with ID {product_id} not found"}, 404
+        
+        # Retrieve product information from request form data
         name = request.form.get("name")
         description = request.form.get("description")
         price = request.form.get("price")
         quantity = request.form.get("quantity")
         category_id = request.form.get("category_id")
+        
+        # Check if all required input fields are provided
         if not name or not description or not price or not quantity or not category_id:
-            raise ValueError("Semua inputan harus diisi.")
+            raise ValueError("All input fields are required.")
+        
+        # Check if the specified category ID exists in the database
         if get_products_by_category(category_id) is None:
-            raise DatabaseError("kategori id tidak ditemukan.")
+            raise DatabaseError(f"Category with ID {category_id} not found.")
+        
+        # Update product information in the database
         update_product(
             product_id=product_id,
             name=name,
@@ -213,46 +278,73 @@ def update_product_controller(product_id: int):
             quantity=quantity,
             category_id=category_id,
         )
-        return {"message": "update produk berhasil"}, 200
+        
+        # Return success message
+        return {"message": "Product update successful"}, 200
+    
     except ValueError as ve:
-        return {"message": str(ve)},422
+        # Handle ValueError with appropriate error message
+        return {"message": str(ve)}, 422
+    
     except DatabaseError as e:
-        return {"message": str(e)},422
+        # Handle DatabaseError with appropriate error message
+        return {"message": str(e), "data": []}, 422
+    
     except Exception as e:
-        return e 
+        # If an unexpected error occurs, raise the error
+        return e
     
 
 
 def delete_product_controller(product_id: int):
     """
-    Controller function to delete a product.
+    Delete a product from the database.
 
-    Parameters:
+    This function handles the deletion of a product from the database. It checks the user role,
+    verifies if the product exists, deletes the product and associated images, and returns a success message.
+
+    Args:
     - product_id (int): The ID of the product to be deleted.
 
     Returns:
-    - dict or tuple: A dictionary containing success message or an error message with status code.
-      If the user is not authorized (not an admin), the dictionary contains a "message" key with an "Unauthorized" message and a 403 status code.
-      If the product ID is not found, the dictionary contains a "message" key with an "ID produk tidak ditemukan" message and a 404 status code.
-      If the product is deleted successfully, the dictionary contains a "message" key with a "berhasil menghapus produk" message and a 200 status code.
+    - dict: A message indicating the success or failure of the product deletion.
+
+    Raises:
+    - Unauthorized: If the user is not authorized to delete products.
+    - DatabaseError: If the specified product ID is not found in the database.
+    - Exception: For other unexpected errors.
     """
     try:
+        # Get current user identity from JWT token
         current_user = get_jwt_identity()
+        # Check if the current user has admin role
         if current_user["role"] != "admin":
             raise Unauthorized("Unauthorized")
+        
+        # Check if the product exists
         if get_product_by_id(product_id):
+            # Retrieve all images associated with the product
             images = get_all_product_images(product_id=product_id)
+            # Delete the product from the database
             delete_product(product_id)
+            # Delete associated images from the server
             for image in images:
                 if os.path.exists(image["image"]):
                     os.remove(image["image"])
-            raise DatabaseError("berhasil menghapus produk")
-        raise DatabaseError("ID produk tidak ditemukan")
+            return {"message": "Product deletion successful"}
+        # If product not found, raise DatabaseError
+        raise DatabaseError("Product ID not found")
+    
     except Unauthorized as e:
-        return {"message": str(e)},403
+        # Handle Unauthorized exception with appropriate error message
+        return {"message": str(e)}, 403
+    
     except DatabaseError as ve:
-        return {"message": str(ve)},404
+        # Handle DatabaseError with appropriate error message
+        return {"message": str(ve)}, 404
+    
     except Exception as e:
+        # If an unexpected error occurs, raise the error
         raise e
 
 # PRODUCT IMAGES MODELS
@@ -260,160 +352,239 @@ def delete_product_controller(product_id: int):
 
 def all_product_images_controller(product_id: int):
     """
-    Controller function to retrieve all images associated with a specific product.
+    Retrieve all images associated with a product.
 
-    Parameters:
-    - product_id (int): The ID of the product for which images are to be retrieved.
+    This function retrieves all images associated with a specified product from the database,
+    combines them with the product information, and returns the result.
+
+    Args:
+    - product_id (int): The ID of the product to retrieve images for.
 
     Returns:
-    - dict or tuple: A dictionary containing the product information and a list of images or an error message with status code.
-      If the product ID is not found, the dictionary contains a "message" key with an "ID produk tidak ditemukan" message and a 404 status code.
-      If images are found, the dictionary contains the product information and an "images" key with the list of images.
-      If no images are found, the "images" key contains a message indicating that there are no images for the product.
+    - dict: A dictionary containing product information along with a list of associated images.
+
+    Raises:
+    - DatabaseError: If the specified product ID is not found in the database.
+    - Exception: For other unexpected errors.
     """
     try:
+        # Check if the product exists
         if get_product_by_id(product_id) is None:
-            raise DatabaseError("ID produk tidak ditemukan")
+            raise DatabaseError(f"Product with ID {product_id} not found")
+        
+        # Retrieve all images associated with the product and the products
         images = get_all_product_images(product_id)
         product = get_product_by_id(product_id)
+        # Combine product information with images and return
         product["images"] = images
         return product
+    
     except DatabaseError as ve:
-        return {"message": str(ve)},404
+        # Handle DatabaseError with appropriate error message
+        return {"message": str(ve), "data": []}, 404
+    
     except Exception as e:
+        # If an unexpected error occurs, raise the error
         raise e
-
+    
 def upload_image_controller(product_id: int):
     """
-    Controller function to upload images for a specific product.
+    Upload images for a specific product.
 
-    Parameters:
-    - product_id (int): The ID of the product for which images are to be uploaded.
+    This function handles the uploading of images for a specified product.
+    It checks if the user is authorized to perform this action, validates the uploaded files,
+    saves them to the server, associates them with the specified product, and returns a success message.
+
+    Args:
+    - product_id (int): The ID of the product to upload images for.
 
     Returns:
-    - dict or tuple: A dictionary containing success message or an error message with status code.
-      If the user is not authorized (not an admin), the dictionary contains a "message" key with an "Unauthorized" message and a 403 status code.
-      If no file is provided, the dictionary contains a "message" key with a "no file part" message.
-      If no selected files are provided, the dictionary contains a "message" key with a "No selected files" message.
-      If the file type is not allowed, the dictionary contains a "message" key with a "File type not allowed" message.
-      If no product ID is provided or it is empty, the dictionary contains a "message" key with a "tambahkan ID produk" message.
-      If the product ID is not found, the dictionary contains a "message" key with an "ID produk tidak ditemukan" message and a 404 status code.
-      If the image upload is successful, the dictionary contains a "message" key with an "upload produk berhasil" message and a 200 status code.
+    - dict: A dictionary containing a success message indicating that the product images were successfully uploaded.
+
+    Raises:
+    - ValueError: If the request does not contain a file or if the file type is not allowed, or if the product ID is missing.
+    - Unauthorized: If the user is not authorized to perform this action.
+    - Exception: For other unexpected errors.
     """
     try:
         current_user = get_jwt_identity()
         if current_user["role"] != "admin":
             raise Unauthorized("Unauthorized")
+        
+        # Check if files are present in the request
         if "file" not in request.files:
-            raise ValueError("no file part")
-
+            raise ValueError("No file part")
+        
         files = request.files.getlist("file")
-
         if not files:
             raise ValueError("No selected files")
-
+        
         allowed_files = ["image/jpeg", "image/jpg", "image/webp", "image/png"]
         for file in files:
+            # Validate file types
             if file.content_type not in allowed_files:
                 raise ValueError("File type not allowed")
-
+        
         locations = []
         for file in files:
+            # Save files to the server
             location = "static/uploads/" + str(time.time()) + "_" + file.filename
             file.save(location)
             locations.append(location)
+        
         if not product_id or product_id == "":
-            return {"message": "tambahkan ID produk"}
-
+            raise ValueError("Please provide a product ID")
+        
+        # Check if the product exists
         if get_product_by_id(product_id) is None:
-            return {"message": "ID produk tidak ditemukan"}, 404
+            return {"message": f"Product with ID {product_id} not found"}, 404
+        
+        # Associate uploaded images with the product
         upload_product_images(image_location=locations, product_id=product_id)
-        return {"message": "upload produk berhasil"}, 200
+        return {"message": "Product images uploaded successfully"}, 200
+    
     except ValueError as ve:
-        return {"message": str(ve)},422
+        return {"message": str(ve)}, 422
     except Unauthorized as e:
-        return {"message": str(e)},422
+        return {"message": str(e)}, 403
     except Exception as e:
+        # If an unexpected error occurs, remove uploaded files and raise the error
         for file in files:
             if os.path.exists(location):
                 os.remove(location)
         raise e
+
     
 def get_image_by_id_controller(product_id: int, image_id: int):
+    """
+    Retrieve an image by its ID for a specific product.
+
+    This function retrieves an image by its ID for a specified product.
+    It checks if both the product and the image exist in the database, and returns the image data if found.
+
+    Args:
+    - product_id (int): The ID of the product to which the image belongs.
+    - image_id (int): The ID of the image to retrieve.
+
+    Returns:
+    - dict: A dictionary containing the image data if found.
+
+    Raises:
+    - Unauthorized: If the user is not authorized to access this resource.
+    - DatabaseError: If the specified product or image is not found in the database.
+    - Exception: For other unexpected errors.
+    """
     try:
+        # Check if the product exists
         if get_product_by_id(product_id) is None:
-            raise DatabaseError("ID produk tidak ditemukan")
-        if get_image_by_product_id_and_image_id(product_id,image_id) is None:
-            raise DatabaseError("ID gambar tidak ditemukan")
-        else:
-            return get_image_by_product_id_and_image_id(product_id,image_id)
+            raise DatabaseError(f"Product with ID {product_id} not found")
+        
+        # Check if the image exists for the specified product
+        image = get_image_by_product_id_and_image_id(product_id, image_id)
+        if image is None:
+            raise DatabaseError(f"Image with ID {image_id} not found")  
+        return image
+    
     except Unauthorized as e:
-        return {"message": str(e)},422
+        return {"message": str(e)}, 422
     except DatabaseError as e:
-        return {"message": str(e)},404
+        return {"message": str(e), "data": []}, 404
     except Exception as e:
         raise e
+    
+
 def delete_image_by_id_controller(product_id: int, image_id: int):
     """
-    Controller function to delete a specific image associated with a product.
+    Delete an image by its ID for a specific product.
 
-    Parameters:
+    This function deletes an image by its ID for a specified product.
+    It checks if the user is authorized to perform this action, and if both the product and the image exist in the database.
+
+    Args:
     - product_id (int): The ID of the product to which the image belongs.
-    - id (int): The ID of the image to be deleted.
+    - image_id (int): The ID of the image to delete.
 
     Returns:
-    - dict or tuple: A dictionary containing success message or an error message with status code.
-      If the user is not authorized (not an admin), the dictionary contains a "message" key with an "Unauthorized" message and a 403 status code.
-      If the product ID is not found, the dictionary contains a "message" key with an "ID produk tidak ditemukan" message and a 404 status code.
-      If the image ID is not found, the dictionary contains a "message" key with an "ID image tidak ditemukan" message and a 404 status code.
-      If the image is deleted successfully, the dictionary contains a "message" key with an "image berhasil dihapus" message and a 200 status code.
+    - dict: A dictionary containing a success message if the deletion is successful.
+
+    Raises:
+    - DatabaseError: If the specified product or image is not found in the database.
+    - Unauthorized: If the user is not authorized to perform this action.
+    - Exception: For other unexpected errors.
     """
     try:
+        # Check if the user is authorized
         current_user = get_jwt_identity()
         if current_user["role"] != "admin":
             raise Unauthorized("Unauthorized")
+        
+        # Check if the product exists
         if get_product_by_id(product_id) is None:
-            raise DatabaseError("ID produk tidak ditemukan")
-        if get_image_by_product_id_and_image_id(product_id,image_id) is None:
-            raise DatabaseError("ID gambar tidak ditemukan")
-        image = get_image_by_product_id_and_image_id(product_id,image_id)
+            raise DatabaseError(f"Product with ID {product_id} not found")
+        
+        # Check if the image exists for the specified product
+        image = get_image_by_product_id_and_image_id(product_id, image_id)
+        if image is None:
+            raise DatabaseError(f"Image with ID {image_id} not found")
+        
+        # Delete the image file from the filesystem
         if os.path.exists(image["image"]):
             os.remove(image["image"])
-        delete_image_by_id(image_id,product_id)
-        return {"message": "image berhasil dihapus"}, 200
+        
+        # Delete the image from the database
+        delete_image_by_id(image_id, product_id)
+        return {"message": "Image successfully deleted"}, 200
+    
     except DatabaseError as e:
-        return {"message": str(e)},404
+        return {"message": str(e)}, 404
     except Unauthorized as e:
-        return {"message": str(e)},422
+        return {"message": str(e)}, 422
     except Exception as e:
         raise e
 
-def delete_images_by_product_id_controller(product_id):
+def delete_images_by_product_id_controller(product_id: int):
     """
-    Controller function to delete all images associated with a specific product.
+    Delete all images associated with a product.
 
-    Parameters:
-    - product_id (int): The ID of the product for which images are to be deleted.
+    This function deletes all images associated with a specified product ID.
+    It checks if the user is authorized to perform this action and if the product exists in the database.
+
+    Args:
+    - product_id (int): The ID of the product whose images are to be deleted.
 
     Returns:
-    - dict or tuple: A dictionary containing success message or an error message with status code.
-      If the user is not authorized (not an admin), the dictionary contains a "message" key with an "Unauthorized" message and a 403 status code.
-      If no images are found for the provided product ID, the dictionary contains a "message" key with a "Product ID image tidak ditemukan" message and a 404 status code.
-      If images are found and deleted successfully, the dictionary contains a "message" key with an "image berhasil dihapus" message and a 200 status code.
+    - dict: A dictionary containing a success message if the deletion is successful.
+
+    Raises:
+    - Unauthorized: If the user is not authorized to perform this action.
+    - DatabaseError: If the specified product is not found in the database.
+    - Exception: For other unexpected errors.
     """
     try:
+        # Get the current user identity
         current_user = get_jwt_identity()
+        
+        # Check if the user is authorized to delete images
         if current_user["role"] != "admin":
             raise Unauthorized("Unauthorized")
+        
+        # Check if the product exists
         if get_all_product_images(product_id) is None:
-            return {"message": "Product ID image tidak ditemukan"}, 404
+            raise DatabaseError(f"Product with ID {product_id} not found")
+        
+        # Get all images associated with the product
         images = get_all_product_images(product_id=product_id)
+        
+        # Delete all images from the database and filesystem
         delete_images_by_product_id(product_id)
         for image in images:
             if os.path.exists(image["image"]):
                 os.remove(image["image"])
-        return {"message": "image berhasil dihapus"}, 200
-    except Unauthorized as ve:
-        return {"message": str(ve)},422
+        return {"message": "All images successfully deleted"}, 200
+    
+    except Unauthorized as e:
+        return {"message": str(e)}, 403
+    except DatabaseError as e:
+        return {"message": str(e)}, 404
     except Exception as e:
-        return {"message": str(e)},422
+        raise e
