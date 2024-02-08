@@ -55,8 +55,6 @@ def get_all_transactions(limit: int, page: int, max_date: int, min_date: int):
         limit %(limit)s offset %(offset)s
         """)
         
-        print(query, values)  # Print the generated query and values for debugging purposes
-        
         # Execute SQL query
         cur.execute(query, values)
         

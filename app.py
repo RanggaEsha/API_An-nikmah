@@ -6,9 +6,7 @@ from flask_jwt_extended import (
 )
 from flask_cors import CORS
 from flask_swagger_ui import get_swaggerui_blueprint
-from flask_bcrypt import Bcrypt 
-
-
+from flask_bcrypt import Bcrypt
 
 app = Flask(__name__)
 jwt = JWTManager(app)

@@ -40,8 +40,9 @@ def get_all_products_controller():
         sort = request.args.get("sort")
         
         # Check if the specified category exists in the database
-        if not get_category_name(category):
-            raise DatabaseError(f"The category '{category}' does not exist.")
+        if category:
+            if not get_category_name(category):
+                raise DatabaseError(f"The category '{category}' does not exist.")
         
         # Call the model function to fetch products based on the filters
         data = get_all_products(
@@ -280,7 +281,7 @@ def update_product_controller(product_id: int):
         )
         
         # Return success message
-        return {"message": "Product update successful"}, 200
+        return {"message": "Product updated successfully"}, 200
     
     except ValueError as ve:
         # Handle ValueError with appropriate error message
@@ -331,9 +332,9 @@ def delete_product_controller(product_id: int):
             for image in images:
                 if os.path.exists(image["image"]):
                     os.remove(image["image"])
-            return {"message": "Product deletion successful"}
+            return {"message": "Product deleted successfully"}
         # If product not found, raise DatabaseError
-        raise DatabaseError("Product ID not found")
+        raise DatabaseError(f"Product with ID {product_id} not found")
     
     except Unauthorized as e:
         # Handle Unauthorized exception with appropriate error message
@@ -475,20 +476,22 @@ def get_image_by_id_controller(product_id: int, image_id: int):
     - Exception: For other unexpected errors.
     """
     try:
+        product = get_product_by_id(product_id)
         # Check if the product exists
-        if get_product_by_id(product_id) is None:
+        if product is None:
             raise DatabaseError(f"Product with ID {product_id} not found")
         
         # Check if the image exists for the specified product
-        image = get_image_by_product_id_and_image_id(product_id, image_id)
+        image = get_image_by_product_id_and_image_id(image_id, product_id)
         if image is None:
-            raise DatabaseError(f"Image with ID {image_id} not found")  
-        return image
+            raise DatabaseError(f"Image with ID {image_id} not found")
+        product["images"] = image
+        return product
     
     except Unauthorized as e:
         return {"message": str(e)}, 422
     except DatabaseError as e:
-        return {"message": str(e), "data": []}, 404
+        return {"message": str(e),"product": product, "images": []}, 404
     except Exception as e:
         raise e
     
@@ -523,7 +526,7 @@ def delete_image_by_id_controller(product_id: int, image_id: int):
             raise DatabaseError(f"Product with ID {product_id} not found")
         
         # Check if the image exists for the specified product
-        image = get_image_by_product_id_and_image_id(product_id, image_id)
+        image = get_image_by_product_id_and_image_id(image_id, product_id)
         if image is None:
             raise DatabaseError(f"Image with ID {image_id} not found")
         

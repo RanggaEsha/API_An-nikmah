@@ -2,7 +2,8 @@ from flask import request
 from flask_jwt_extended import (create_access_token,get_jwt_identity)
 from models import *
 from datetime import timedelta
-from errors import Unauthorized
+from errors import Unauthorized,DatabaseError
+from form_validator import RegistrationForm
 
 
 
@@ -41,11 +42,11 @@ def get_email_password_controller():
             return {'token': access_token}
         
         # If user information is not found, raise an error
-        raise ValueError("Username atau password salah")
+        raise ValueError("Email atau password salah")
     
     except ValueError as e:
         # Returning an error message if authentication fails
-        return {"message": str(e)}, 422
+        return {"error": str(e)}, 422
     
     except Exception as e:
         # Raising an error if any other error occurs
@@ -67,19 +68,25 @@ def register_controller():
         last_name = request.form.get('last_name')
         email = request.form.get('email')
         password = request.form.get('password')
+        form = RegistrationForm(request.form)
         
-        # Checking if the email is already registered
+        if not form.validate():
+            errors = {field.name: field.errors for field in form if field.errors}
+            raise ValueError(errors)
+
         register_user = find_email(request)
         if register_user:
-            raise ValueError('Email sudah terdaftar')
+            raise DatabaseError('Email sudah terdaftar')
         
         # Adding user data to the database
         add_user_data(first_name, last_name, email, password)
         return {'message': 'Register berhasil'}, 200
     
-    except ValueError as ve:
+    except DatabaseError as e:
+        return {"error": str(e)}, 404
+    except ValueError as e:
         # Returning an error message if the email is already registered
-        return {"message": str(ve)}, 404
+        return {"errors": e.args[0]}, 422
     
     except Exception as e:
         # Raising an error if any other error occurs
@@ -126,6 +133,11 @@ def update_data_user_controller():
         last_name = request.form.get('last_name')
         email = request.form.get('email')
         password = request.form.get('password')
+        form = RegistrationForm(request.form)
+        
+        if not form.validate():
+            errors = {field.name: field.errors for field in form if field.errors}
+            raise ValueError(errors)
         
         # Updating user data in the database
         update_data_user(user_id, first_name, last_name, email, password)
@@ -133,7 +145,7 @@ def update_data_user_controller():
     
     except ValueError as e:
         # Handling validation errors
-        return {"message": str(e)}, 422
+        return {"errors": e.args[0]}, 422
     
     except Exception as e:
         # Raising an error if any exception occurs during the process
@@ -167,6 +179,11 @@ def register_admin_controller():
         last_name = request.form.get('last_name')
         email = request.form.get('email')
         password = request.form.get('password')
+        form = RegistrationForm(request.form)
+        
+        if not form.validate():
+            errors = {field.name: field.errors for field in form if field.errors}
+            raise ValueError(errors)
         
         # Checking if the email is already registered
         register_user = find_email(request)
@@ -180,7 +197,7 @@ def register_admin_controller():
     
     except ValueError as e:
         # Handling validation errors
-        return {"message": str(e)}, 404
+        return {"message": e.args[0] }, 404
     
     except Exception as e:
         # Raising an error if any exception occurs during the process
@@ -241,11 +258,18 @@ def update_data_admin_controller():
         last_name = request.form.get('last_name')
         password = request.form.get('password')
         email = request.form.get('email')
+        form = RegistrationForm(request.form)
+        
+        if not form.validate():
+            errors = {field.name: field.errors for field in form if field.errors}
+            raise ValueError(errors)
         
         # Updating admin data in the database
         update_data_user(admin_id, first_name, last_name, email, password)
         return {'message': 'Data updated successfully'}, 200
-    
+    except ValueError as e:
+        # Returning an error message if authentication fails
+        return {"error": e.args[0]}, 422
     except Unauthorized as e:
         # Handling unauthorized access
         return {"message": str(e)}, 404

@@ -36,24 +36,7 @@ def get_all_products(
         values = {"limit": limit, "offset": page}
         join = []
         where = []
-        whitelist_orders = [
-            "id", "name", "price", "category_id"
-        ]
-        # Check if the provided order_by field is valid
-        if order_by:
-            if order_by not in whitelist_orders:
-                raise ValueError("Value Order By tidak ada didalam whitelist, whitelist yang tersedia: " + ", ".join(whitelist_orders))
-        else:
-            order_by = ''
-        whitelist_sorts = [
-            "asc", "desc"
-        ]
-        # Check if the provided sort field is valid
-        if sort:
-            if sort not in whitelist_sorts:
-                raise ValueError("Value Sort By tidak ada didalam whitelist, whitelist yang tersedia: " + ", ".join(whitelist_sorts))
-        else:
-            sort = ''
+        
         if keyword:
             # Add filter for product name based on keyword
             where.append("p.name ilike %(keyword)s")
@@ -76,7 +59,25 @@ def get_all_products(
             # Add filter for maximum price
             where.append("price <= %(max_price)s")
             values["max_price"] = max_price
-
+        
+        whitelist_orders = [
+            "id", "name", "price", "category_id"
+        ]
+        # Check if the provided order_by field is valid
+        if order_by:
+            if order_by not in whitelist_orders:
+                raise ValueError("Value Order By tidak ada didalam whitelist, whitelist yang tersedia: " + ", ".join(whitelist_orders))
+        else:
+            order_by = ''
+        whitelist_sorts = [
+            "asc", "desc"
+        ]
+        # Check if the provided sort field is valid
+        if sort:
+            if sort not in whitelist_sorts:
+                raise ValueError("Value Sort By tidak ada didalam whitelist, whitelist yang tersedia: " + ", ".join(whitelist_sorts))
+        else:
+            sort = ''
         if len(where) > 0:
             where = "WHERE " + " AND ".join(where)
         else:
@@ -100,9 +101,7 @@ def get_all_products(
         {order} {sort}
         limit %(limit)s offset %(offset)s
         """
-
         cur.execute(query, values)
-
         conn.commit()
         products = cur.fetchall()
         # If no products are fetched and the page exceeds the total number of rows, return an empty data list 
@@ -472,7 +471,7 @@ def upload_product_images(image_location: str, product_id: int):
         cur.close()
 
 
-def delete_image_by_id(product_id: int,image_id: int):
+def delete_image_by_id(image_id: int, product_id: int):
     """
     Delete an image by its ID and associated product ID.
 

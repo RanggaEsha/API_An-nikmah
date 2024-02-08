@@ -90,6 +90,10 @@ def update_category_controller(id: int):
         
         # Retrieving category name from the request
         name = request.form.get('name')
+
+        # checking wheither form name is fulfilled is not none
+        if name == "" or not name:
+            raise ValueError("please input value correctly")
         
         # Checking if the category with the given ID exists
         if get_category(id) is None:
@@ -102,7 +106,8 @@ def update_category_controller(id: int):
         # Updating the category
         update_category(id, name)
         return {'message': 'Category updated successfully'}, 200
-    
+    except ValueError as e:
+        return {"message": str(e)}, 404
     except DatabaseError as e:
         return {"message": str(e)}, 404
     except Unauthorized as e:

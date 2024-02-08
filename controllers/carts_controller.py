@@ -2,7 +2,7 @@ from models import *
 from errors import *
 from flask import request
 from flask_jwt_extended import get_jwt_identity
-
+from form_validator import get_cart_form,add_cart_form
 
 def get_carts_user_controller():
     """
@@ -19,6 +19,11 @@ def get_carts_user_controller():
         page = request.args.get('page', 1)
         max_date = request.args.get('max_date')
         min_date = request.args.get('min_date')
+        form = get_cart_form(request.form)
+        if not form.validate():
+            errors = {field.name: field.errors for field in form if field.errors}
+            raise ValueError(errors)
+
         
         # Checking if the user is an admin
         if get_jwt_identity()['role'] == 'admin':
@@ -33,7 +38,8 @@ def get_carts_user_controller():
         if not user_carts:
             raise DatabaseError("Your shopping cart is empty")
         return user_carts
-    
+    except ValueError as e:
+        return {"errors": e.args[0]}, 422
     except DatabaseError as e:
         return {"message": str(e), "data": []}, 404
     except Exception as e:
@@ -53,8 +59,12 @@ def add_carts_user_controller():
         user_id = get_jwt_identity()["id"]
         
         # Retrieving product ID and quantity from the request form
-        product_id = int(request.form.get("product_id"))
+        product_id = request.form.get("product_id")
         quantity = request.form.get("quantity")
+        form = add_cart_form(request.form)
+        if not form.validate():
+            errors = {field.name: field.errors for field in form if field.errors}
+            raise ValueError(errors)
         
         # Retrieving product information
         product = get_product_by_id(product_id)
@@ -74,12 +84,12 @@ def add_carts_user_controller():
             result = {"message": "Successfully added to cart"}, 200
             return result
         else:
-            # If yes, update the quantity in the cart
             update_cart(product_id, user_id, quantity)
+            # If yes, update the quantity in the cart
             result = {"message": "Quantity updated successfully"}, 200
             return result
     except ValueError as ve:
-        return {"message": str(ve)}, 422
+        return {"message": ve.args[0]}, 422
     except DatabaseError as e:
         return {"message": str(e), "data": []}, 404
     except Exception as e:

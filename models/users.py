@@ -155,7 +155,6 @@ def get_user_data(id: int):
                 "first_name": user[0],
                 "last_name": user[1],
                 "email": user[2],
-                "password": user[3]  # Note: Password is hashed and stored in the database
             }
             return data
         else:
@@ -183,13 +182,24 @@ def update_data_user(id, first_name, last_name, email, password):
     """
     cur = conn.cursor()
     try:
-        cur.execute('''
-                    UPDATE users
-                    SET first_name = %s,
-                    last_name = %s,
-                    email = %s,
-                    password = %s
-                    WHERE id = %s''', (first_name, last_name, email, password, id))
+        
+        if password:
+            bcrypt = Bcrypt()
+            hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+            cur.execute('''
+                        UPDATE users
+                        SET first_name = %s,
+                        last_name = %s,
+                        email = %s,
+                        password = %s
+                        WHERE id = %s''', (first_name, last_name, email, hashed_password, id))
+        else:
+            cur.execute('''
+                        UPDATE users
+                        SET first_name = %s,
+                        last_name = %s,
+                        email = %s
+                        WHERE id = %s''', (first_name, last_name, email, id))
         conn.commit()
     except Exception as e:
         conn.rollback()

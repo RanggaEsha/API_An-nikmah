@@ -674,7 +674,7 @@
         }
       },
       "delete": {
-        "summary": "Upload product images by product id",
+        "summary": "Delete product images by product id",
         "tags": [
           "Product/images"
         ],

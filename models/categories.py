@@ -13,7 +13,7 @@ def get_categories():
     """
     cur = conn.cursor()
     try:
-        cur.execute("SELECT id category_id,name,slug FROM categories")
+        cur.execute("SELECT id category_id,name,slug FROM categories order by id")
         categories = cur.fetchall()
         list_categories = []
         for category in categories:
