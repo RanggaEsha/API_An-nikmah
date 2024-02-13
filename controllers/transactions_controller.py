@@ -2,7 +2,7 @@ from models import *
 from flask import request
 from flask_jwt_extended import get_jwt_identity
 from errors import *
-from form_validator import add_transaction_form,add_transaction_from_cart_form
+from form_validator import get_transaction_form,add_transaction_form,add_transaction_from_cart_form,validate_date_format
 
 
 def get_all_user_transactions_controller():
@@ -19,6 +19,30 @@ def get_all_user_transactions_controller():
         page = request.args.get("page", 1)
         max_date = request.args.get("max_date")
         min_date = request.args.get("min_date")
+         # Check if either max_date or min_date is provided in the request
+        if max_date or min_date:
+
+            # Validate format of max_date if it's present
+            if max_date and not validate_date_format(max_date):
+                # Raise an error with a message about invalid max_date format
+                errors = {"max_date": ["Invalid date format. Use YYYY-MM-DD."]}
+                raise ValueError(errors)
+
+            # Validate format of min_date if it's present
+            if min_date and not validate_date_format(min_date):
+                # Raise an error with a message about invalid min_date format
+                errors = {"min_date": ["Invalid date format. Use YYYY-MM-DD."]}
+                raise ValueError(errors)
+
+            # Create a form instance from request.form data
+            form = get_transaction_form(request.form)
+
+            # Perform additional validation on the form
+            if not form.validate():
+                # Collect errors from the form fields
+                errors = {field.name: field.errors for field in form if field.errors}
+                # Raise a ValueError with the collected form errors
+                raise ValueError(errors)
         
         # Checking if the user is an admin
         if get_jwt_identity()["role"] == "admin":
@@ -137,7 +161,7 @@ def add_transaction_from_carts_controller():
         fullname = request.form.get("fullname")
         phone_number = request.form.get("phone_number")
         cart_ids = request.form.getlist("cart_ids")
-        form = add_transaction_form(request.form)
+        form = add_transaction_from_cart_form(request.form)
         if not form.validate():
             errors = {field.name: field.errors for field in form if field.errors}
             raise ValueError(errors)

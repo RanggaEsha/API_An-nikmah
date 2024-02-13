@@ -1,33 +1,39 @@
-class OutOfStockError(Exception):
-    """Raised when the stock is not sufficient."""
-
-    def __init__(self, message):
-        super().__init__(message)
-
-
 class Unauthorized(Exception):
-    """Raised when the stock is not sufficient."""
+    """
+    Exception raised when an unauthorized access is attempted.
 
+    Args:
+        message (str): The error message to be displayed.
+    """
     def __init__(self, message):
         super().__init__(message)
-
-
 
 class ValueError(Exception):
-    """Raised when the stock is not sufficient."""
+    """
+    Exception raised for invalid input values.
 
+    Args:
+        message (str): The error message to be displayed.
+    """
     def __init__(self, message):
         super().__init__(message)
-        
+
 class FileError(Exception):
-    """Raised when the stock is not sufficient."""
+    """
+    Exception raised for file-related errors.
 
+    Args:
+        message (str): The error message to be displayed.
+    """
     def __init__(self, message):
         super().__init__(message)
-
 
 class DatabaseError(Exception):
-    """Raised when the stock is not sufficient."""
+    """
+    Exception raised for database-related errors.
 
+    Args:
+        message (str): The error message to be displayed.
+    """
     def __init__(self, message):
         super().__init__(message)
