@@ -175,4 +175,4 @@ class add_transaction_from_cart_form(Form):
     address = StringField('address', [validators.Length(min=3, max=35)])
     fullname = StringField('fullname', [validators.Length(min=3, max=200)])
     phone_number = StringField("phone_number", [validators.Length(min=10,message="phone number is invalid")]) 
-    carts_ids = IntegerField("carts_ids", [validators.NumberRange(min=1,max=200,message="product is must be number")])
+    carts_ids = IntegerField("cart_ids", [validators.NumberRange(min=1,max=200,message="product is must be number")])

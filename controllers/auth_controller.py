@@ -5,8 +5,6 @@ from datetime import timedelta
 from errors import Unauthorized,DatabaseError
 from form_validator import RegistrationForm,LoginForm
 
-
-
 def protected_controller():
     current_user = get_jwt_identity()
     return {'login as':current_user["username"]},200
@@ -31,7 +29,7 @@ def get_email_password_controller():
             errors = {field.name: field.errors for field in form if field.errors}
             raise ValueError(errors)
         # Finding user information based on email and password
-        user = find_email_password(email=email, password=password)   
+        user = find_email_password(email=email, password=password)
         
         # If user information is found, create an access token
         if user:
