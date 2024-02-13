@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+load_dotenv()
 from flask import Flask, render_template
 from controllers import *
 from flask_jwt_extended import (
@@ -36,8 +38,8 @@ def get_all_products():
     return protected_controller()
 
 
-@app.post("/login")
-def get_email_password():
+@app.post("/users/login")
+def get_email_password_user():
     """
     Logs in the user with provided email and password.
 
@@ -48,7 +50,7 @@ def get_email_password():
 
 # USER
 
-@app.post("/register")
+@app.post("/users/register")
 def register():
     """
     Registers a new user.
@@ -92,6 +94,15 @@ def delete_user_id():
     return delete_user_controller()
 
 # ADMIN
+@app.post("/admin/login")
+def get_email_password_admin():
+    """
+    Logs in the admin with provided email and password.
+
+    Returns:
+        dict: Dictionary containing a JWT token if login successful.
+    """
+    return get_email_password_controller()
 
 @app.post("/admin/register")
 def register_admin():

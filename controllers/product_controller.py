@@ -1,6 +1,7 @@
 from flask import request
 from models import *
 from errors import *
+from form_validator import *
 import time, os
 from flask_jwt_extended import get_jwt_identity
 
@@ -38,12 +39,12 @@ def get_all_products_controller():
         min_price = request.args.get("min_price")
         order_by = request.args.get("order_by")
         sort = request.args.get("sort")
-        
+
         # Check if the specified category exists in the database
         if category:
             if not get_category_name(category):
                 raise DatabaseError(f"The category '{category}' does not exist.")
-        
+
         # Call the model function to fetch products based on the filters
         data = get_all_products(
             page=page,
@@ -53,9 +54,9 @@ def get_all_products_controller():
             max_price=max_price,
             min_price=min_price,
             order_by=order_by,
-            sort=sort
+            sort=sort,
         )
-        
+
         # Return the fetched data
         if data:
             return data
@@ -63,7 +64,7 @@ def get_all_products_controller():
             return {"data": []}
     except DatabaseError as e:
         # Handle DatabaseError with appropriate error message
-        return {"message": str(e), "data": []}, 404
+        return {"error": str(e), "data": []}, 404
     except Exception as e:
         # Handle other unexpected errors by raising them
         raise e
@@ -89,27 +90,28 @@ def get_products_by_category_controller(category_id: int):
         # Check if the specified category ID exists in the database
         if get_category(category_id) is None:
             raise DatabaseError(f"The category with ID {category_id} was not found.")
-        
+
         # Retrieve products belonging to the specified category
         products = get_products_by_category(category_id)
-        
+
         # Get category information
         category = get_category(category_id)
-        
+
         # Add products to the category dictionary
         if products:
             category["products"] = products
         else:
             category["products"] = []
-        
+
         # Return the category with its associated products
         return category
     except DatabaseError as e:
         # Handle DatabaseError with appropriate error message
-        return {"message": str(e)}, 404
+        return {"error": str(e)}, 404
     except Exception as e:
         # Handle other unexpected errors by raising them
         raise e
+
 
 def get_product_by_id_controller(id: int):
     """
@@ -132,9 +134,9 @@ def get_product_by_id_controller(id: int):
             raise DatabaseError(f"produk dengan ID {id} tidak ditemukan")
         return product
     except ValueError as e:
-        return {"message": str(e)},422
+        return {"error": str(e)}, 422
     except DatabaseError as e:
-        return {"message": str(e),"data":[]},404
+        return {"error": str(e), "data": []}, 404
     except Exception as e:
         raise e
 
@@ -160,41 +162,45 @@ def add_product_controller():
         # Check if the current user has admin role
         if current_user["role"] != "admin":
             return {"message": "Unauthorized"}, 403
-        
+
         # Retrieve product information from request form data
         name = request.form.get("name")
         description = request.form.get("description")
         price = request.form.get("price")
         quantity = request.form.get("quantity")
         category_id = request.form.get("category_id")
-        
+        form = add_product_form(request.form)
+        if not form.validate():
+            errors = {field.name: field.errors for field in form if field.errors}
+            raise ValueError(errors)
+
         # Check if all required input fields are provided
         if not name or not description or not price or not quantity or not category_id:
             raise ValueError("All input fields are required.")
-        
+
         # Check if the specified category ID exists in the database
         if not get_category(category_id):
             raise DatabaseError(f"The category with ID {category_id} was not found.")
-        
+
         # Check if file is included in the request
         if "file" not in request.files:
-            raise ValueError("Please include the image file.")
-        
+            raise FileError("Please include the image file.")
+
         # Retrieve and validate file(s) from the request
         files = request.files.getlist("file")
         if not files:
-            raise ValueError("No selected files")
+            raise FileError("No selected files")
         allowed_files = ["image/jpeg", "image/jpg", "image/webp", "image/png"]
         for file in files:
             if file.content_type not in allowed_files:
-                raise ValueError("File type not allowed")
-        
+                raise FileError("File type not allowed")
+
         # Upload image files and save their locations
         for file in files:
             location = "static/uploads/" + str(time.time()) + "_" + file.filename
             file.save(location)
             locations.append(location)
-        
+
         # Upload product information to the database
         last_inserted_id = upload_product(
             name=name,
@@ -203,21 +209,25 @@ def add_product_controller():
             quantity=quantity,
             category_id=category_id,
         )
-        
+
         # Upload product images to the database
         upload_product_images(locations, last_inserted_id)
-        
+
         # Return success message
         return {"message": "Product upload successful"}, 200
-    
+
     except ValueError as ve:
         # Handle ValueError with appropriate error message
-        return {"message": str(ve)}, 422
-    
+        return {"errors": ve.args[0]}, 422
+
+    except FileError as e:
+        # Handle FileError with appropriate error message
+        return {"error": str(e)}, 404
+
     except DatabaseError as e:
         # Handle DatabaseError with appropriate error message
-        return {"message": str(e)}, 404
-    
+        return {"error": str(e)}, 404
+
     except Exception as e:
         # If an unexpected error occurs, remove uploaded files and raise the error
         for file in locations:
@@ -250,26 +260,26 @@ def update_product_controller(product_id: int):
         # Check if the current user has admin role
         if current_user["role"] != "admin":
             return {"message": "Unauthorized"}, 401
-        
+
         # Check if the product exists
         if get_product_by_id(product_id) is None:
             return {"message": f"Product with ID {product_id} not found"}, 404
-        
+
         # Retrieve product information from request form data
         name = request.form.get("name")
         description = request.form.get("description")
         price = request.form.get("price")
         quantity = request.form.get("quantity")
         category_id = request.form.get("category_id")
-        
-        # Check if all required input fields are provided
-        if not name or not description or not price or not quantity or not category_id:
-            raise ValueError("All input fields are required.")
-        
+        form = add_product_form(request.form)
+        if not form.validate():
+            errors = {field.name: field.errors for field in form if field.errors}
+            raise ValueError(errors)
+
         # Check if the specified category ID exists in the database
         if get_products_by_category(category_id) is None:
             raise DatabaseError(f"Category with ID {category_id} not found.")
-        
+
         # Update product information in the database
         update_product(
             product_id=product_id,
@@ -279,22 +289,21 @@ def update_product_controller(product_id: int):
             quantity=quantity,
             category_id=category_id,
         )
-        
+
         # Return success message
         return {"message": "Product updated successfully"}, 200
-    
+
     except ValueError as ve:
         # Handle ValueError with appropriate error message
-        return {"message": str(ve)}, 422
-    
+        return {"errors": ve.args[0]}, 422
+
     except DatabaseError as e:
         # Handle DatabaseError with appropriate error message
-        return {"message": str(e), "data": []}, 422
-    
+        return {"error": str(e), "data": []}, 422
+
     except Exception as e:
         # If an unexpected error occurs, raise the error
         return e
-    
 
 
 def delete_product_controller(product_id: int):
@@ -321,7 +330,7 @@ def delete_product_controller(product_id: int):
         # Check if the current user has admin role
         if current_user["role"] != "admin":
             raise Unauthorized("Unauthorized")
-        
+
         # Check if the product exists
         if get_product_by_id(product_id):
             # Retrieve all images associated with the product
@@ -335,18 +344,19 @@ def delete_product_controller(product_id: int):
             return {"message": "Product deleted successfully"}
         # If product not found, raise DatabaseError
         raise DatabaseError(f"Product with ID {product_id} not found")
-    
+
     except Unauthorized as e:
         # Handle Unauthorized exception with appropriate error message
-        return {"message": str(e)}, 403
-    
+        return {"error": str(e)}, 403
+
     except DatabaseError as ve:
         # Handle DatabaseError with appropriate error message
-        return {"message": str(ve)}, 404
-    
+        return {"error": str(ve)}, 404
+
     except Exception as e:
         # If an unexpected error occurs, raise the error
         raise e
+
 
 # PRODUCT IMAGES MODELS
 
@@ -372,22 +382,23 @@ def all_product_images_controller(product_id: int):
         # Check if the product exists
         if get_product_by_id(product_id) is None:
             raise DatabaseError(f"Product with ID {product_id} not found")
-        
+
         # Retrieve all images associated with the product and the products
         images = get_all_product_images(product_id)
         product = get_product_by_id(product_id)
         # Combine product information with images and return
         product["images"] = images
         return product
-    
+
     except DatabaseError as ve:
         # Handle DatabaseError with appropriate error message
-        return {"message": str(ve), "data": []}, 404
-    
+        return {"error": str(ve), "data": []}, 404
+
     except Exception as e:
         # If an unexpected error occurs, raise the error
         raise e
-    
+
+
 def upload_image_controller(product_id: int):
     """
     Upload images for a specific product.
@@ -411,43 +422,45 @@ def upload_image_controller(product_id: int):
         current_user = get_jwt_identity()
         if current_user["role"] != "admin":
             raise Unauthorized("Unauthorized")
-        
+
         # Check if files are present in the request
         if "file" not in request.files:
-            raise ValueError("No file part")
-        
+            raise FileError("No file part")
+
         files = request.files.getlist("file")
         if not files:
-            raise ValueError("No selected files")
-        
+            raise FileError("No selected files")
+
         allowed_files = ["image/jpeg", "image/jpg", "image/webp", "image/png"]
         for file in files:
             # Validate file types
             if file.content_type not in allowed_files:
-                raise ValueError("File type not allowed")
-        
+                raise FileError("File type not allowed")
+
         locations = []
         for file in files:
             # Save files to the server
             location = "static/uploads/" + str(time.time()) + "_" + file.filename
             file.save(location)
             locations.append(location)
-        
+
         if not product_id or product_id == "":
             raise ValueError("Please provide a product ID")
-        
+
         # Check if the product exists
         if get_product_by_id(product_id) is None:
             return {"message": f"Product with ID {product_id} not found"}, 404
-        
+
         # Associate uploaded images with the product
         upload_product_images(image_location=locations, product_id=product_id)
         return {"message": "Product images uploaded successfully"}, 200
-    
+
     except ValueError as ve:
-        return {"message": str(ve)}, 422
+        return {"error": str(ve)}, 422
+    except FileError as ve:
+        return {"error": str(ve)}, 422
     except Unauthorized as e:
-        return {"message": str(e)}, 403
+        return {"error": str(e)}, 403
     except Exception as e:
         # If an unexpected error occurs, remove uploaded files and raise the error
         for file in files:
@@ -455,7 +468,7 @@ def upload_image_controller(product_id: int):
                 os.remove(location)
         raise e
 
-    
+
 def get_image_by_id_controller(product_id: int, image_id: int):
     """
     Retrieve an image by its ID for a specific product.
@@ -480,21 +493,21 @@ def get_image_by_id_controller(product_id: int, image_id: int):
         # Check if the product exists
         if product is None:
             raise DatabaseError(f"Product with ID {product_id} not found")
-        
+
         # Check if the image exists for the specified product
         image = get_image_by_product_id_and_image_id(image_id, product_id)
         if image is None:
             raise DatabaseError(f"Image with ID {image_id} not found")
         product["images"] = image
         return product
-    
+
     except Unauthorized as e:
-        return {"message": str(e)}, 422
+        return {"error": str(e)}, 422
     except DatabaseError as e:
-        return {"message": str(e),"product": product, "images": []}, 404
+        return {"error": str(e), "product": product, "images": []}, 404
     except Exception as e:
         raise e
-    
+
 
 def delete_image_by_id_controller(product_id: int, image_id: int):
     """
@@ -520,30 +533,31 @@ def delete_image_by_id_controller(product_id: int, image_id: int):
         current_user = get_jwt_identity()
         if current_user["role"] != "admin":
             raise Unauthorized("Unauthorized")
-        
+
         # Check if the product exists
         if get_product_by_id(product_id) is None:
             raise DatabaseError(f"Product with ID {product_id} not found")
-        
+
         # Check if the image exists for the specified product
         image = get_image_by_product_id_and_image_id(image_id, product_id)
         if image is None:
             raise DatabaseError(f"Image with ID {image_id} not found")
-        
+
         # Delete the image file from the filesystem
         if os.path.exists(image["image"]):
             os.remove(image["image"])
-        
+
         # Delete the image from the database
         delete_image_by_id(image_id, product_id)
         return {"message": "Image successfully deleted"}, 200
-    
+
     except DatabaseError as e:
-        return {"message": str(e)}, 404
+        return {"error": str(e)}, 404
     except Unauthorized as e:
-        return {"message": str(e)}, 422
+        return {"error": str(e)}, 422
     except Exception as e:
         raise e
+
 
 def delete_images_by_product_id_controller(product_id: int):
     """
@@ -566,28 +580,28 @@ def delete_images_by_product_id_controller(product_id: int):
     try:
         # Get the current user identity
         current_user = get_jwt_identity()
-        
+
         # Check if the user is authorized to delete images
         if current_user["role"] != "admin":
             raise Unauthorized("Unauthorized")
-        
+
         # Check if the product exists
         if get_all_product_images(product_id) is None:
             raise DatabaseError(f"Product with ID {product_id} not found")
-        
+
         # Get all images associated with the product
         images = get_all_product_images(product_id=product_id)
-        
+
         # Delete all images from the database and filesystem
         delete_images_by_product_id(product_id)
         for image in images:
             if os.path.exists(image["image"]):
                 os.remove(image["image"])
         return {"message": "All images successfully deleted"}, 200
-    
+
     except Unauthorized as e:
-        return {"message": str(e)}, 403
+        return {"error": str(e)}, 403
     except DatabaseError as e:
-        return {"message": str(e)}, 404
+        return {"error": str(e)}, 404
     except Exception as e:
         raise e

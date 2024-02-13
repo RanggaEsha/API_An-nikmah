@@ -2,7 +2,7 @@ from models import *
 from errors import *
 from flask import request
 from flask_jwt_extended import get_jwt_identity
-from form_validator import get_cart_form,add_cart_form
+from form_validator import get_cart_form,add_cart_form,validate_date_format
 
 def get_carts_user_controller():
     """
@@ -19,10 +19,30 @@ def get_carts_user_controller():
         page = request.args.get('page', 1)
         max_date = request.args.get('max_date')
         min_date = request.args.get('min_date')
-        form = get_cart_form(request.form)
-        if not form.validate():
-            errors = {field.name: field.errors for field in form if field.errors}
-            raise ValueError(errors)
+        # Check if either max_date or min_date is provided in the request
+        if max_date or min_date:
+
+            # Validate format of max_date if it's present
+            if max_date and not validate_date_format(max_date):
+                # Raise an error with a message about invalid max_date format
+                errors = {"max_date": ["Invalid date format. Use YYYY-MM-DD."]}
+                raise ValueError(errors)
+
+            # Validate format of min_date if it's present
+            if min_date and not validate_date_format(min_date):
+                # Raise an error with a message about invalid min_date format
+                errors = {"min_date": ["Invalid date format. Use YYYY-MM-DD."]}
+                raise ValueError(errors)
+
+            # Create a form instance from request.form data
+            form = get_cart_form(request.form)
+
+            # Perform additional validation on the form
+            if not form.validate():
+                # Collect errors from the form fields
+                errors = {field.name: field.errors for field in form if field.errors}
+                # Raise a ValueError with the collected form errors
+                raise ValueError(errors)
 
         
         # Checking if the user is an admin
@@ -41,7 +61,7 @@ def get_carts_user_controller():
     except ValueError as e:
         return {"errors": e.args[0]}, 422
     except DatabaseError as e:
-        return {"message": str(e), "data": []}, 404
+        return {"error": str(e), "data": []}, 404
     except Exception as e:
         raise e
 
@@ -89,9 +109,9 @@ def add_carts_user_controller():
             result = {"message": "Quantity updated successfully"}, 200
             return result
     except ValueError as ve:
-        return {"message": ve.args[0]}, 422
+        return {"errors": ve.args[0]}, 422
     except DatabaseError as e:
-        return {"message": str(e), "data": []}, 404
+        return {"error": str(e), "data": []}, 404
     except Exception as e:
         raise e
 
@@ -114,9 +134,6 @@ def delete_cart_by_user_id_controller():
         
         # Returning success message
         return {"message": "Successfully deleted all your carts"}
-    except ValueError as ve:
-        # Handling value errors
-        return {"message": str(ve)}, 422
     except Exception as e:
         # Handling other exceptions and raising them
         raise e
@@ -139,18 +156,15 @@ def delete_cart_by_cart_id_and_user_id_controller(cart_id):
         
         # Check if the cart with the given cart_id and user_id exists
         if get_cart_by_cart_id_and_user_id(cart_id, user_id) is None:
-            raise DatabaseError("ID keranjang anda tidak ditemukan")
+            raise DatabaseError("cart ID is not found")
         
         # Delete the cart
         delete_cart_by_user_id_and_cart_id(cart_id, user_id)
-        return {"message": "berhasil menghapus keranjang"}
+        return {"message": "Successfully deleted your cart"}
     
     except DatabaseError as e:
         # Return error message for database errors
-        return {"message": str(e)},404
-    except ValueError as ve:
-        # Return error message for value errors
-        return {"message": str(ve)},422
+        return {"error": str(e)},404
     except Exception as e:
         # Raise any other exceptions
         raise e

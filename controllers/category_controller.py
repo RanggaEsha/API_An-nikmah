@@ -2,7 +2,7 @@ from flask import request
 from models import *
 from flask_jwt_extended import (get_jwt_identity)
 from errors import *
-
+from form_validator import add_category_form
 
 def get_categories_controller():
     """
@@ -31,7 +31,7 @@ def get_category_controller(id: int):
         return get_category(id)
     except ValueError as e:
         # Returning an error message if the category is not found
-        return {"message": str(e)}, 422
+        return {"error": str(e)}, 422
     except Exception as e:
         # Returning an error if any other error occurs
         raise e
@@ -51,6 +51,12 @@ def add_category_controller():
         
         # Retrieving category name from the request
         name = request.form.get('name')
+        form = add_category_form(request.form)
+        
+        # validating value of name in form
+        if not form.validate():
+            errors = {field.name: field.errors for field in form if field.errors}
+            raise ValueError(errors)
         
         # Checking if the category name is already registered
         if get_category_name(name):
@@ -61,12 +67,16 @@ def add_category_controller():
         
         # Returning success message
         return {'message': 'Category added successfully'}, 200
+    
+    except ValueError as e:
+        # Returning an error message if adding category value is wrong
+        return {"errors": e.args[0]}, 422
     except DatabaseError as e:
         # Returning error message if there's a database error
-        return {"message": str(e)}, 404
+        return {"error": str(e)}, 404
     except Unauthorized as e:
         # Returning unauthorized message
-        return {"message": str(e)}, 422
+        return {"error": str(e)}, 422
     except Exception as e:
         # Raising other exceptions
         raise e
@@ -91,9 +101,13 @@ def update_category_controller(id: int):
         # Retrieving category name from the request
         name = request.form.get('name')
 
-        # checking wheither form name is fulfilled is not none
-        if name == "" or not name:
-            raise ValueError("please input value correctly")
+        # checking wheither form name is fulfilled correctly
+        form = add_category_form(request.form)
+        
+        # validating value of name in form
+        if not form.validate():
+            errors = {field.name: field.errors for field in form if field.errors}
+            raise ValueError(errors)
         
         # Checking if the category with the given ID exists
         if get_category(id) is None:
@@ -107,11 +121,11 @@ def update_category_controller(id: int):
         update_category(id, name)
         return {'message': 'Category updated successfully'}, 200
     except ValueError as e:
-        return {"message": str(e)}, 404
+        return {"errors": e.args[0]}, 404
     except DatabaseError as e:
-        return {"message": str(e)}, 404
+        return {"error": str(e)}, 404
     except Unauthorized as e:
-        return {"message": str(e)}, 422
+        return {"error": str(e)}, 422
     except Exception as e:
         raise e
 
@@ -141,8 +155,8 @@ def delete_category_controller(id):
         raise DatabaseError(f"Category with ID {id} not found")
     
     except Unauthorized as e:
-        return {"message": str(e)}, 422
+        return {"error": str(e)}, 422
     except DatabaseError as e:
-        return {"message": str(e)}, 404
+        return {"error": str(e)}, 404
     except Exception as e:
         raise e

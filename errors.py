@@ -18,6 +18,12 @@ class ValueError(Exception):
 
     def __init__(self, message):
         super().__init__(message)
+        
+class FileError(Exception):
+    """Raised when the stock is not sufficient."""
+
+    def __init__(self, message):
+        super().__init__(message)
 
 
 class DatabaseError(Exception):

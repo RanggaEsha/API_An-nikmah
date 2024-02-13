@@ -3,7 +3,7 @@ from flask_jwt_extended import (create_access_token,get_jwt_identity)
 from models import *
 from datetime import timedelta
 from errors import Unauthorized,DatabaseError
-from form_validator import RegistrationForm
+from form_validator import RegistrationForm,LoginForm
 
 
 
@@ -25,7 +25,11 @@ def get_email_password_controller():
         # Retrieving email and password from the request form
         email = request.form.get('email')
         password = request.form.get('password')
+        form = LoginForm(request.form)
         
+        if not form.validate():
+            errors = {field.name: field.errors for field in form if field.errors}
+            raise ValueError(errors)
         # Finding user information based on email and password
         user = find_email_password(email=email, password=password)   
         
@@ -46,7 +50,7 @@ def get_email_password_controller():
     
     except ValueError as e:
         # Returning an error message if authentication fails
-        return {"error": str(e)}, 422
+        return {"errors": e.args[0]}, 422
     
     except Exception as e:
         # Raising an error if any other error occurs
@@ -126,8 +130,10 @@ def update_data_user_controller():
     """
     try:
         # Getting the user ID from the JWT token
-        user_id = get_jwt_identity()['id']
-        
+        user = get_jwt_identity()
+        user_id = user['id']
+        if user['role'] != 'user':
+            raise Unauthorized("Unauthorized")
         # Retrieving updated user data from the request
         first_name = request.form.get('first_name')
         last_name = request.form.get('last_name')
@@ -142,6 +148,9 @@ def update_data_user_controller():
         # Updating user data in the database
         update_data_user(user_id, first_name, last_name, email, password)
         return {'message': 'Data user berhasil diperbarui'}, 200
+    except Unauthorized as e:
+        # Handling unauthorized access
+        return {"error": str(e)}, 422
     
     except ValueError as e:
         # Handling validation errors
@@ -197,7 +206,7 @@ def register_admin_controller():
     
     except ValueError as e:
         # Handling validation errors
-        return {"message": e.args[0] }, 404
+        return {"errors": e.args[0] }, 404
     
     except Exception as e:
         # Raising an error if any exception occurs during the process
@@ -221,14 +230,14 @@ def get_admin_data_controller():
         
         # Checking if the user is an admin
         if admin['role'] != 'admin':
-            raise Exception("Unauthorized")
+            raise Unauthorized("Unauthorized")
         
         # Retrieving admin data from the database and return it
         return get_user_data(admin_id)
     
     except Unauthorized as e:
         # Handling unauthorized access
-        return {"message": str(e)}, 422
+        return {"error": str(e)}, 422
     except Exception as e:
         # Raising an error if any other exception occurs
         raise e
@@ -259,7 +268,6 @@ def update_data_admin_controller():
         password = request.form.get('password')
         email = request.form.get('email')
         form = RegistrationForm(request.form)
-        
         if not form.validate():
             errors = {field.name: field.errors for field in form if field.errors}
             raise ValueError(errors)
@@ -272,7 +280,7 @@ def update_data_admin_controller():
         return {"error": e.args[0]}, 422
     except Unauthorized as e:
         # Handling unauthorized access
-        return {"message": str(e)}, 404
+        return {"error": str(e)}, 404
     except Exception as e:
         # Raising an error if any other exception occurs
         raise e
@@ -303,7 +311,7 @@ def delete_admin_controller():
     
     except Unauthorized as e:
         # Handling unauthorized access
-        return {"message": str(e)}, 422
+        return {"error": str(e)}, 422
     except Exception as e:
         # Raising an error if any other exception occurs
         raise e

@@ -2,6 +2,7 @@ from models import *
 from flask import request
 from flask_jwt_extended import get_jwt_identity
 from errors import *
+from form_validator import add_transaction_form,add_transaction_from_cart_form
 
 
 def get_all_user_transactions_controller():
@@ -38,7 +39,7 @@ def get_all_user_transactions_controller():
         return user_transactions
     except DatabaseError as e:
         # Return error message and an empty data of list if database error occurs
-        return {"message": str(e),"data":[]}, 404
+        return {"error": str(e),"data":[]}, 404
     except Exception as e:
         raise e
 
@@ -63,12 +64,10 @@ def add_user_transactions_controller():
         phone_number = request.form.get("phone_number")
         product_ids = request.form.getlist("product_id")
         quantities = request.form.getlist("quantity")
-        
-        # Check if required data is provided
-        if not address or not fullname or not phone_number:
-            raise ValueError("Isi data diri Anda dengan benar")
-        if not product_ids or not quantities:
-            raise ValueError("Pastikan pilihan produk Anda benar dan tidak kosong")
+        form = add_transaction_form(request.form)
+        if not form.validate():
+            errors = {field.name: field.errors for field in form if field.errors}
+            raise ValueError(errors)
         
         # Begin a transaction
         transaction = add_transaction(user_id, address, fullname, phone_number)
@@ -107,11 +106,11 @@ def add_user_transactions_controller():
     except ValueError as e:
         # Rollback transaction and return error message for value error
         conn.rollback()
-        return {"message": str(e)}, 404
+        return {"errors": e.args[0]}, 404
     except DatabaseError as e:
         # Rollback transaction and return error message for database error
         conn.rollback()
-        return {"message": str(e)}, 404
+        return {"error": str(e)}, 404
     except Exception as e:
         # Rollback transaction and raise exception for other errors
         conn.rollback()
@@ -138,10 +137,10 @@ def add_transaction_from_carts_controller():
         fullname = request.form.get("fullname")
         phone_number = request.form.get("phone_number")
         cart_ids = request.form.getlist("cart_ids")
-        
-        # Check if required data is provided
-        if not address or not fullname or not phone_number:
-            raise ValueError("Isi data diri Anda dengan benar")
+        form = add_transaction_form(request.form)
+        if not form.validate():
+            errors = {field.name: field.errors for field in form if field.errors}
+            raise ValueError(errors)
         
         # Begin a transaction
         transaction = add_transaction(user_id, address, fullname, phone_number)
@@ -182,11 +181,11 @@ def add_transaction_from_carts_controller():
     except DatabaseError as a:
         # Rollback transaction and return error message for database error
         conn.rollback()
-        return {"message": str(a)}, 404
+        return {"error": str(a)}, 404
     except ValueError as v:
         # Rollback transaction and return error message for value error
         conn.rollback()
-        return {"message": str(v)}, 404
+        return {"errors": v.args[0]}, 404
     except Exception as e:
         # Rollback transaction and raise exception for other errors
         conn.rollback()
@@ -213,7 +212,7 @@ def delete_user_transaction_controller():
     except Exception as e:
         # Rollback transaction and return error message for other errors
         conn.rollback()
-        return {"message": str(e)}, 422
+        raise e
 
 
 
@@ -244,7 +243,7 @@ def get_transaction_details_by_transaction_id_controller(transaction_id: int):
         raise DatabaseError("Detail transaksi anda masih kosong")
     
     except DatabaseError as e:
-        return {"message": str(e),"data": []}, 404
+        return {"error": str(e),"data": []}, 404
     except Exception as e:
         raise e
 

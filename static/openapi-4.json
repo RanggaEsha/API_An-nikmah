@@ -19,9 +19,9 @@
     }
   },
   "paths": {
-    "/login": {
+    "/admin/login": {
       "post": {
-        "summary": "login",
+        "summary": "login admin",
         "tags": [
           "Authentication"
         ],
@@ -36,6 +36,49 @@
                     "type": "string"
                   },
                   "password": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "NOT FOUND"
+          }
+        }
+      }
+    },
+    "/admin/register": {
+      "post": {
+        "summary": "register admin",
+        "tags": [
+          "Authentication"
+        ],
+        "description": "register admin",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "first_name": {
+                    "type": "string"
+                  },
+                  "last_name": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  },
+                  "confirm_password": {
                     "type": "string"
                   }
                 }
@@ -102,6 +145,9 @@
                   },
                   "password": {
                     "type": "string"
+                  },
+                  "confirm_password": {
+                    "type": "string"
                   }
                 }
               }
@@ -141,25 +187,19 @@
         }
       }
     },
-    "/admin/register": {
+    "/users/login": {
       "post": {
-        "summary": "register admin",
+        "summary": "login user",
         "tags": [
-          "Admin"
+          "Authentication"
         ],
-        "description": "register admin",
+        "description": "login",
         "requestBody": {
           "content": {
             "multipart/form-data": {
               "schema": {
                 "type": "object",
                 "properties": {
-                  "first_name": {
-                    "type": "string"
-                  },
-                  "last_name": {
-                    "type": "string"
-                  },
                   "email": {
                     "type": "string"
                   },
@@ -181,9 +221,9 @@
         }
       }
     },
-    "/register": {
+    "/users/register": {
       "post": {
-        "summary": "register",
+        "summary": "register user",
         "tags": [
           "Authentication"
         ],
@@ -204,6 +244,9 @@
                     "type": "string"
                   },
                   "password": {
+                    "type": "string"
+                  },
+                  "confirm_password": {
                     "type": "string"
                   }
                 }
@@ -270,6 +313,9 @@
                   },
                   "password": {
                     "type": "string"
+                  },
+                  "confirm_password": {
+                    "type": "string"
                   }
                 }
               }
@@ -286,7 +332,7 @@
         }
       },
       "delete": {
-        "summary": "protected",
+        "summary": "delete user data",
         "tags": [
           "Users"
         ],
@@ -425,7 +471,7 @@
           "content": {
             "multipart/form-data": {
               "encoding": {
-                "file":{
+                "file": {
                   "explode": true
                 }
               },
@@ -642,7 +688,7 @@
           "content": {
             "multipart/form-data": {
               "encoding": {
-                "file":{
+                "file": {
                   "explode": true
                 }
               },
@@ -1182,10 +1228,10 @@
           "content": {
             "multipart/form-data": {
               "encoding": {
-                "product_id":{
+                "product_id": {
                   "explode": true
                 },
-                "quantity":{
+                "quantity": {
                   "explode": true
                 }
               },
@@ -1264,7 +1310,7 @@
           "content": {
             "multipart/form-data": {
               "encoding": {
-                "cart_ids":{
+                "cart_ids": {
                   "explode": true
                 }
               },
