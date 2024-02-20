@@ -1,5 +1,5 @@
 from db import conn
-from flask_bcrypt import Bcrypt 
+from flask_bcrypt import Bcrypt
 
 def get_user_id(id: int):
     """
