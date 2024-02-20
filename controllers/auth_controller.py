@@ -1,6 +1,7 @@
 from flask import request
 from flask_jwt_extended import (create_access_token,get_jwt_identity)
 from models import *
+from flask_bcrypt import Bcrypt
 from datetime import timedelta
 from errors import Unauthorized,DatabaseError
 from form_validator import RegistrationForm,LoginForm
@@ -30,9 +31,13 @@ def get_email_password_controller():
             raise ValueError(errors)
         # Finding user information based on email and password
         user = find_email_password(email=email, password=password)
-        
+        # Extract the hashed password from the database
+        hashed_password = user['password']
+        # Initialize bcrypt for password comparison
+        bcrypt = Bcrypt()
+        # Compare the hashed password from the database with the provided password using bcrypt hashing
+        if bcrypt.check_password_hash(hashed_password, password):
         # If user information is found, create an access token
-        if user:
             access_token = create_access_token(
                 identity={
                     "id": user['id'],
@@ -79,9 +84,12 @@ def register_controller():
         register_user = find_email(request)
         if register_user:
             raise DatabaseError('Email sudah terdaftar')
-        
+        # Initialize bcrypt for password hashing
+        bcrypt = Bcrypt()
+        # Hash the provided password using bcrypt and decode it to utf-8 format
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         # Adding user data to the database
-        add_user_data(first_name, last_name, email, password)
+        add_user_data(first_name, last_name, email, hashed_password)
         return {'message': 'Register berhasil'}, 200
     
     except DatabaseError as e:
@@ -142,9 +150,10 @@ def update_data_user_controller():
         if not form.validate():
             errors = {field.name: field.errors for field in form if field.errors}
             raise ValueError(errors)
-        
+        bcrypt = Bcrypt()
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         # Updating user data in the database
-        update_data_user(user_id, first_name, last_name, email, password)
+        update_data_user(user_id, first_name, last_name, email, hashed_password)
         return {'message': 'Data user berhasil diperbarui'}, 200
     except Unauthorized as e:
         # Handling unauthorized access
@@ -196,9 +205,12 @@ def register_admin_controller():
         register_user = find_email(request)
         if register_user:
             raise ValueError('Email already registered')
-        
+        # hashing password
+        bcrypt = Bcrypt()
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+
         # Adding admin data to the database
-        add_admin_data(first_name, last_name, email, password)
+        add_admin_data(first_name, last_name, email, hashed_password)
         
         return {'message': 'Registration successful'}, 200
     
@@ -269,9 +281,10 @@ def update_data_admin_controller():
         if not form.validate():
             errors = {field.name: field.errors for field in form if field.errors}
             raise ValueError(errors)
-        
+        bcrypt = Bcrypt()
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         # Updating admin data in the database
-        update_data_user(admin_id, first_name, last_name, email, password)
+        update_data_user(admin_id, first_name, last_name, email, hashed_password)
         return {'message': 'Data updated successfully'}, 200
     except ValueError as e:
         # Returning an error message if authentication fails

@@ -1,5 +1,5 @@
 from db import conn
-from flask_bcrypt import Bcrypt
+
 
 def get_user_id(id: int):
     """
@@ -42,17 +42,12 @@ def find_email_password(email: str, password: str):
         cur.execute('SELECT id, first_name, last_name, email, password, role FROM users WHERE email = %s', (email,))
         user = cur.fetchone()
         if user:
-            # Extract the hashed password from the database
-            hashed_password = user[4]
-            # Initialize bcrypt for password comparison
-            bcrypt = Bcrypt()
-            # Compare the hashed password from the database with the provided password using bcrypt hashing
-            if bcrypt.check_password_hash(hashed_password, password):
                 # If the password matches, construct a dictionary with user information
                 return {
                     "id": user[0],
                     "username": user[1] + " " + user[2],  # Combine first name and last name to form the username
-                    "role": user[5]
+                    "role": user[5],
+                    "password": user[4]
                 }
         else:
             return None
@@ -83,12 +78,9 @@ def add_user_data(first_name: str, last_name, email, password):
     """
     cur = conn.cursor()
     try:
-        # Initialize bcrypt for password hashing
-        bcrypt = Bcrypt()
-        # Hash the provided password using bcrypt and decode it to utf-8 format
-        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        
         cur.execute('INSERT INTO users (first_name, last_name, email, password, role) VALUES (%s, %s, %s, %s, %s)',
-                    (first_name, last_name, email, hashed_password, "user"))
+                    (first_name, last_name, email, password, "user"))
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -100,9 +92,8 @@ def add_user_data(first_name: str, last_name, email, password):
 def add_admin_data(first_name,last_name,email,password):
     cur = conn.cursor()
     try:
-        bcrypt = Bcrypt()
-        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        cur.execute('INSERT INTO users (first_name,last_name,email,password,role) VALUES (%s,%s,%s,%s,%s)',(first_name,last_name,email,hashed_password,"admin"))
+        
+        cur.execute('INSERT INTO users (first_name,last_name,email,password,role) VALUES (%s,%s,%s,%s,%s)',(first_name,last_name,email,password,"admin"))
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -184,15 +175,14 @@ def update_data_user(id, first_name, last_name, email, password):
     try:
         
         if password:
-            bcrypt = Bcrypt()
-            hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+            
             cur.execute('''
                         UPDATE users
                         SET first_name = %s,
                         last_name = %s,
                         email = %s,
                         password = %s
-                        WHERE id = %s''', (first_name, last_name, email, hashed_password, id))
+                        WHERE id = %s''', (first_name, last_name, email, password, id))
         else:
             cur.execute('''
                         UPDATE users
