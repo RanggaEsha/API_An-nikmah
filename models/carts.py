@@ -54,17 +54,19 @@ def get_all_carts(page: int, limit: int, max_date: int, min_date: int):
         # Fetching and formatting the result
         list_data = []
         data = cur.fetchall()
+        
         if not data and page >= cur.rowcount:
             return {"data": []}
         if data is not None:
             for item in data:
                 new_data = {
                     "id": item[0],
-                    "user_id": item[1],
-                    "product_id": item[2],
+                    "product_id": item[1],
+                    "user_id": item[2],
                     "quantity": item[3],
                 }
                 list_data.append(new_data)
+
             return list_data
         else:
             return None
@@ -137,8 +139,8 @@ def get_carts_by_user_id(user_id: int, page: int, limit: int, max_date: int, min
             for item in data:
                 new_data = {
                     "id": item[0],
-                    "user_id": item[1],
-                    "product_id": item[2],
+                    "product_id": item[1],
+                    "user_id": item[2],
                     "quantity": item[3],
                 }
                 list_data.append(new_data)

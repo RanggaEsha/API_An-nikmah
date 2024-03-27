@@ -4,7 +4,7 @@ from models import *
 from flask_bcrypt import Bcrypt
 from datetime import timedelta
 from errors import Unauthorized,DatabaseError
-from form_validator import RegistrationForm,LoginForm
+from form_validator import RegistrationForm,LoginForm,UpdateWithNoPassword 
 
 def protected_controller():
     current_user = get_jwt_identity()
@@ -145,16 +145,23 @@ def update_data_user_controller():
         last_name = request.form.get('last_name')
         email = request.form.get('email')
         password = request.form.get('password')
-        form = RegistrationForm(request.form)
-        
-        if not form.validate():
-            errors = {field.name: field.errors for field in form if field.errors}
-            raise ValueError(errors)
-        bcrypt = Bcrypt()
-        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        # Updating user data in the database
-        update_data_user(user_id, first_name, last_name, email, hashed_password)
-        return {'message': 'Data user berhasil diperbarui'}, 200
+        if password:
+            form = RegistrationForm(request.form)
+            if not form.validate():
+                errors = {field.name: field.errors for field in form if field.errors}
+                raise ValueError(errors)
+            bcrypt = Bcrypt()
+            hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+            # Updating admin data in the database
+            update_data_user(user_id, first_name, last_name, email, hashed_password)
+            return {'message': 'Data updated successfully'}, 200
+        else:
+            form = UpdateWithNoPassword(request.form)
+            if not form.validate():
+                errors = {field.name: field.errors for field in form if field.errors}
+                raise ValueError(errors)
+            update_data_user(user_id, first_name, last_name, email, password)
+            return {'message': 'Data updated successfully'}, 200
     except Unauthorized as e:
         # Handling unauthorized access
         return {"error": str(e)}, 422
@@ -277,15 +284,22 @@ def update_data_admin_controller():
         last_name = request.form.get('last_name')
         password = request.form.get('password')
         email = request.form.get('email')
-        form = RegistrationForm(request.form)
-        if not form.validate():
-            errors = {field.name: field.errors for field in form if field.errors}
-            raise ValueError(errors)
-        bcrypt = Bcrypt()
-        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        # Updating admin data in the database
-        update_data_user(admin_id, first_name, last_name, email, hashed_password)
-        return {'message': 'Data updated successfully'}, 200
+        if password:
+            form = RegistrationForm(request.form)
+            if not form.validate():
+                errors = {field.name: field.errors for field in form if field.errors}
+                raise ValueError(errors)
+            bcrypt = Bcrypt()
+            hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+            # Updating admin data in the database
+            update_data_user(admin_id, first_name, last_name, email, hashed_password)
+        else:
+            form = UpdateWithNoPassword(request.form)
+            if not form.validate():
+                errors = {field.name: field.errors for field in form if field.errors}
+                raise ValueError(errors)
+            update_data_user(admin_id, first_name, last_name, email, password)
+            return {'message': 'Data updated successfully'}, 200
     except ValueError as e:
         # Returning an error message if authentication fails
         return {"error": e.args[0]}, 422

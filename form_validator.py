@@ -6,8 +6,10 @@ from wtforms import (
     EmailField,
     IntegerField,
     DateField,
+    FieldList
 )
 from datetime import datetime
+from errors import ValueError
 
 
 # AUTH
@@ -66,6 +68,9 @@ class RegistrationForm(Form):
         validators=[validators.EqualTo("password", "Confirm password is mismatch")]
     )
 
+class UpdateWithNoPassword(Form):
+    first_name = StringField("first_name", [validators.Length(min=3, max=25)])
+    email = EmailField("email", [validators.Length(min=6, max=35), validators.Email()])
 
 # CART
 class get_cart_form(Form):
@@ -221,7 +226,7 @@ class add_transaction_form(Form):
         [validators.NumberRange(min=1, max=200, message="category_id must be number")],
     )
 
-
+    
 class add_transaction_from_cart_form(Form):
     """
     Form for adding a new transaction from cart.
@@ -240,9 +245,5 @@ class add_transaction_from_cart_form(Form):
     address = StringField("address", [validators.Length(min=3, max=35)])
     fullname = StringField("fullname", [validators.Length(min=3, max=200)])
     phone_number = StringField(
-        "phone_number", [validators.Length(min=10, message="phone number is invalid")]
-    )
-    carts_ids = IntegerField(
-        "cart_ids",
-        [validators.NumberRange(min=1, max=200, message="product is must be number")],
+        "phone_number", [validators.Length(min=10, message="phone number is invalid, at least 10 numbers")]
     )

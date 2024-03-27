@@ -165,7 +165,10 @@ def add_transaction_from_carts_controller():
         if not form.validate():
             errors = {field.name: field.errors for field in form if field.errors}
             raise ValueError(errors)
-        
+        for cart_id in cart_ids:
+            if not isinstance(cart_id, int):
+                raise ValueError(f"Invalid cart ID: {cart_id} (must be an integer)")
+            break
         # Begin a transaction
         transaction = add_transaction(user_id, address, fullname, phone_number)
         
